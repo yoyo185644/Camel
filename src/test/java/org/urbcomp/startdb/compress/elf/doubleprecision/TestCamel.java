@@ -113,7 +113,7 @@ public class TestCamel {
         double ratio = size / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
         long compress_time = (long) (time / TIME_PRECISION);
         System.out.println(fileName + " " + ratio);
-//        System.out.println(fileName + " " +compress_time);
+        System.out.println(fileName + " " +compress_time);
 
 
 

@@ -142,6 +142,7 @@ public class CamelDecompressor {
                 xor = in.readInt((int) (xorCount+1));
                 leadingZeroSNum = leadingZerosNumFour[(int) xorCount];
             }
+
             // 根据leadingZeroSNum和XOR拼接xorVal
             long shiftedValue = (long)xor << (64-xorCount-leadingZeroSNum);
             String xorString = String.format("%64s", Long.toBinaryString(shiftedValue)).replace(' ', '0');
