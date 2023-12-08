@@ -75,8 +75,8 @@ public class CaseStudy {
 //        Double double1 = 1.4853863503867337;
 //        Double double2 = 1.0000042703086087;
 //        Double double1 = 2.0;
-        Double double2 = 1.25;
-        Double double1 = 1.00;
+        Double double2 = 1.49;
+        Double double1 = 1.24;
 //        Double double2 = Double.NaN;
 //        Double double3 = 34.04;
         String xor1 = getIEEE754(double1);

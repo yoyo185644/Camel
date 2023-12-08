@@ -134,7 +134,7 @@ public class Camel {
             // 标志位：是否计算m的值
             out.writeBit(true);
             size += 1;
-            m = decimal_value_prime.subtract(threshold.multiply(decimal_value_prime.divide(threshold, 0, BigDecimal.ROUND_DOWN)));;
+            m = decimal_value_prime.subtract(threshold.multiply(decimal_value_prime.divide(threshold, 0, BigDecimal.ROUND_DOWN)));
             // 对于m进行XOR操作
             long xor = Double.doubleToLongBits(decimal_value_prime.doubleValue() + 1) ^
                     Double.doubleToLongBits(m.doubleValue() + 1);
@@ -152,7 +152,7 @@ public class Camel {
 //                out.writeInt(significantBits-1, 2); // 00-1位 01-2位 10-3位 11-4位
 //                size+=2;
 //            }
-            // 保存小数位数长度的centerBits 四位最多就是1000
+            // 保存小数位数长度的centerBits 保存decimal_count （四位最多就是1000）
             out.writeLong(xor >>> trailingZeros, decimal_count);
             size += decimal_count;// Store the meaningful bits of XOR
 
