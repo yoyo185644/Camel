@@ -23,7 +23,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import yyy.ts.compress.camel.BPlusTree;
 public class TestCamel {
     private static final String FILE_PATH = "src/test/resources/ElfTestData";
 
@@ -92,6 +92,8 @@ public class TestCamel {
                 for (double value : values) {
                     compressor.addValue(value);
                 }
+                BPlusTree bPlusTree = compressor.getbPlusTree();
+
                 compressor.close();
                 encodingDuration = System.nanoTime() - start;
                 size = size + compressor.getSize();

@@ -4,6 +4,8 @@ package yyy.ts.compress.camel;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import  static yyy.ts.compress.camel.CamelUtils.*;
+
 class FlagTrueNode{
     byte flag;
     LinkedList<DecimalNode> decimalNodes;
@@ -90,13 +92,13 @@ public class BPlusDecimalTree {
     private static TSNode previousTSNode = null;
 
     // 按照寻找到的m的值进行保存
-    public final static int[] mValueBits = {3, 5, 7, 10, 15};
+
     public BPlusDecimalTree(int order) {
         this.root = new BPlusDecimalTreeNode(true);
         this.order = order;
     }
 
-    public void insert(byte flag, byte[] xorVal, byte[] compressInt, byte[] compressDecimal, long timestamp) {
+    public void insert(byte[] flag, byte[] xorVal, byte[] compressInt, byte[] compressDecimal, long timestamp) {
         // 寻找小数部分
         if (buildFlag) {
             KeyNode node = searchKeyNode(binaryToInt(compressDecimal));
@@ -108,7 +110,7 @@ public class BPlusDecimalTree {
                 }
                     previousTSNode = tsNode;
                 // 如果flag=1
-                if (flag == 1) {
+                if (binaryToInt(flag) == 1) {
                     // 查询flagTrueNode是否存在
                     if (node.flagTrueNode != null) {
                         LinkedList<DecimalNode> decimalNodes = node.flagTrueNode.decimalNodes;
@@ -252,24 +254,25 @@ public class BPlusDecimalTree {
         return searchKey(node.children.get(i), compressDecimal);
     }
 
-    public BPlusDecimalTree buildTree(BPlusDecimalTree bPlusTree, int decimalCount) {
-        int[] range = new int[]{4, 25, 125, 625};
-        for (int key = 1; key < range[decimalCount-1]; key ++) {
+    public BPlusDecimalTree buildTree(BPlusDecimalTree bPlusTree,  byte[] decimalCount, byte[] xorFlag, byte[] xorVal) {
+        int[] range = new int[]{5, 25, 125, 625};
+        int decimal_Count = binaryToInt(decimalCount);
+        for (int key = 1; key < range[decimal_Count-1]; key ++) {
 
 //      // 获取是否通过XOR的flag
-        byte[] compressDecimal = compressDecimal(decimalCount, key);
-        byte flag = compressDecimal[2];
-        byte[] xorVal = null;
-        byte[] decimalVal = null;
+//        byte[] compressDecimal = compressDecimal(decimal_Count, key);
+//        byte flag = compressDecimal[2];
+//        byte[] xorVal = null;
+//        byte[] decimalVal = null;
 //
-        if (flag == 1) { // 通过XOR之后的centerbits和保存的值
-            xorVal = Arrays.copyOfRange(compressDecimal, 3, (int) (3 + decimalCount));
-            decimalVal = Arrays.copyOfRange(compressDecimal, (int) (3 + decimalCount), compressDecimal.length);
-        } else { // 没有通过XOR的保存的值
-            decimalVal = Arrays.copyOfRange(compressDecimal, 3, compressDecimal.length);
-        }
+//        if (flag == 1) { // 通过XOR之后的centerbits和保存的值
+//            xorVal = Arrays.copyOfRange(compressDecimal, 3, (int) (3 + decimalCount));
+//            decimalVal = Arrays.copyOfRange(compressDecimal, (int) (3 + decimalCount), compressDecimal.length);
+//        } else { // 没有通过XOR的保存的值
+//            decimalVal = Arrays.copyOfRange(compressDecimal, 3, compressDecimal.length);
+//        }
         // todo 参数compressDecimal修改成 compressInt
-        bPlusTree.insert(flag, xorVal, null, decimalVal, 1l);
+        bPlusTree.insert(xorFlag, xorVal, null, compressDecimal(decimal_Count, key), 1);
         }
         buildFlag = true;
         return bPlusTree;
@@ -318,14 +321,6 @@ public class BPlusDecimalTree {
         return null; // 未找到关键字对应的值
     }
 
-    public static int binaryToInt(byte[] binaryArray) {
-        int result = 0;
-        for (int i = 0; i < binaryArray.length; i++) {
-            result = (result << 1) | binaryArray[i];
-        }
-        return result;
-    }
-
 
     //解压小数部分
     public static int decompressDecimal(byte[] decimalCompress) {
@@ -333,74 +328,6 @@ public class BPlusDecimalTree {
 
     }
 
-    //压缩小数部分
-    public static byte[] compressDecimal(int decimalCount, int key) {
-        if (decimalCount <= 1) { // 如果是1 直接往后读decimal_count+1位
-            return convertToBinary(key, decimalCount+1);
-        } else if (decimalCount ==2) {
-            if (key < 8) {
-                return convertToBinary(key, 3);
-            }else {
-                return convertToBinary(key, 5);
-            }
-
-        } else if (decimalCount == 3) {
-            if (key < 4) {
-                return convertToBinary(key, 2);
-            }else if (key < 8){
-                return convertToBinary(key, 3);
-            }else if (key < 16) {
-                return convertToBinary(key, 4);
-            }else {
-                return convertToBinary(key, mValueBits[decimalCount-1]);
-            }
-
-        } else {
-            if (key < 16) {
-                return convertToBinary(key, 4);
-            }else if (key < 64){
-                return convertToBinary(key, 6);
-            }else if (key < 256) {
-                return convertToBinary(key, 8);
-            }else {
-                return convertToBinary(key, mValueBits[decimalCount-1]);
-            }
-
-        }
-    }
-
-    private static byte[] convertToBinary(int number, int desiredLength) {
-        // 将整数转换为二进制字符串
-        String binaryString = Integer.toBinaryString(number);
-        // 获取当前二进制字符串的长度
-        int currentLength = binaryString.length();
-
-        // 如果当前长度小于指定长度，则在左侧补零，直到达到指定长度
-        if (currentLength < desiredLength) {
-            StringBuilder paddedBinary = new StringBuilder();
-            for (int i = 0; i < desiredLength - currentLength; i++) {
-                paddedBinary.append('0');
-            }
-            paddedBinary.append(binaryString);
-            return binaryStringToByteArray(paddedBinary.toString());
-        }
-
-        // 如果当前长度大于等于指定长度，则直接返回当前二进制字符串
-        return binaryStringToByteArray(binaryString);
-    }
-
-    private static byte[] binaryStringToByteArray(String binaryString) {
-        int numBytes = (binaryString.length() + 7) / 8; // 计算所需的字节数
-        ByteBuffer buffer = ByteBuffer.allocate(numBytes);
-        for (int i = 0; i < numBytes; i++) {
-            int startIndex = i * 8;
-            int endIndex = Math.min(startIndex + 8, binaryString.length());
-            String byteString = binaryString.substring(startIndex, endIndex);
-            buffer.put((byte) Integer.parseInt(byteString, 2));
-        }
-
-        return buffer.array();
-    }
 
 
     public static void main(String[] args) {

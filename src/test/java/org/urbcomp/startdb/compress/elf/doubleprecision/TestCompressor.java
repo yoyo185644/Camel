@@ -96,12 +96,12 @@ public class TestCompressor {
         while ((values = fileReader.nextBlock()) != null) {
             totalBlocks += 1;
             ICompressor[] compressors = new ICompressor[]{
-                new GorillaCompressorOS(),
-                new ElfOnGorillaCompressorOS(),
-                new ChimpCompressor(),
-                new ElfOnChimpCompressor(),
-                new ChimpNCompressor(128),
-                new ElfOnChimpNCompressor(128),
+//                new GorillaCompressorOS(),
+//                new ElfOnGorillaCompressorOS(),
+//                new ChimpCompressor(),
+//                new ElfOnChimpCompressor(),
+//                new ChimpNCompressor(128),
+//                new ElfOnChimpNCompressor(128),
                 new ElfCompressor(),
             };
             for (int i = 0; i < compressors.length; i++) {

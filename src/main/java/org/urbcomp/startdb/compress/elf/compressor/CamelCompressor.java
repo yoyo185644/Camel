@@ -1,5 +1,6 @@
 package org.urbcomp.startdb.compress.elf.compressor;
 
+import yyy.ts.compress.camel.BPlusTree;
 import yyy.ts.compress.camel.Camel;
 
 public class CamelCompressor implements ICompressor{
@@ -18,6 +19,12 @@ public class CamelCompressor implements ICompressor{
     public int getSize() {
         return camel.getSize();
     }
+
+
+    public BPlusTree getbPlusTree() {
+        return camel.getbPlusTree();
+    }
+
 
     @Override
     public byte[] getBytes() {
