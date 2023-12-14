@@ -114,7 +114,7 @@ public class Camel {
                     compressVal.get("xorFlag"), compressVal.get("xorVal"), compressVal.get("compressDecimal"), 1);
         }
         this.setbPlusTree(bPlusTree);
-
+        this.setbPlusDecimalTree(bPlusDecimalTree);
         return size;
     }
 

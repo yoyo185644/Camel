@@ -2,6 +2,8 @@ package org.urbcomp.startdb.compress.elf.compressor;
 
 import fi.iki.yak.ts.compression.gorilla.CompressorOS;
 import gr.aueb.delorean.chimp.OutputBitStream;
+import yyy.ts.compress.camel.BPlusDecimalTree;
+import yyy.ts.compress.camel.BPlusTree;
 
 public class ElfOnGorillaCompressorOS extends AbstractElfCompressor{
     private final CompressorOS gorilla;
@@ -34,5 +36,15 @@ public class ElfOnGorillaCompressorOS extends AbstractElfCompressor{
         // we write one more bit here, for marking an end of the stream.
         writeInt(2, 2); // case 10
         gorilla.close();
+    }
+
+    @Override
+    public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusDecimalTree getbPlusDecimalTree() {
+        return null;
     }
 }

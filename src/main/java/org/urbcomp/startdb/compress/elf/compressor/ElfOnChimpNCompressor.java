@@ -2,6 +2,8 @@ package org.urbcomp.startdb.compress.elf.compressor;
 
 import gr.aueb.delorean.chimp.ChimpN;
 import gr.aueb.delorean.chimp.OutputBitStream;
+import yyy.ts.compress.camel.BPlusDecimalTree;
+import yyy.ts.compress.camel.BPlusTree;
 
 public class ElfOnChimpNCompressor extends AbstractElfCompressor{
     private final ChimpN chimpN;
@@ -33,5 +35,15 @@ public class ElfOnChimpNCompressor extends AbstractElfCompressor{
         // we write one more bit here, for marking an end of the stream.
         writeInt(2, 2); // case 10
         chimpN.close();
+    }
+
+    @Override
+    public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusDecimalTree getbPlusDecimalTree() {
+        return null;
     }
 }

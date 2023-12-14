@@ -15,7 +15,12 @@ import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.junit.jupiter.api.Test;
 import org.urbcomp.startdb.compress.elf.compressor.*;
 import org.urbcomp.startdb.compress.elf.decompressor.*;
+import yyy.ts.compress.camel.BPlusDecimalTree;
 import yyy.ts.compress.camel.CamelDecompressor;
+import org.apache.poi.ss.usermodel.*;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -54,7 +59,7 @@ public class TestCamel {
             "/POI-lon.csv",
 
     };
-    private static final String STORE_RESULT = "src/test/resources/result/result.csv";
+    private static final String STORE_RESULT = "src/test/resources/result/result_camel.csv";
 
     private static final double TIME_PRECISION = 1000.0;
     List<Map<String, ResultStructure>> allResult = new ArrayList<>();
@@ -65,7 +70,6 @@ public class TestCamel {
             Map<String, List<ResultStructure>> result = new HashMap<>();
             testELFCompressor(filename, result);
         }
-        storeResult();
     }
 
 
@@ -74,7 +78,7 @@ public class TestCamel {
 
         float totalBlocks = 0;
         double[] values;
-
+        long compressSize = 0l;
         long size = 0l;
         double time = 0;
         while ((values = fileReader.nextBlock()) != null) {
@@ -92,10 +96,14 @@ public class TestCamel {
                 for (double value : values) {
                     compressor.addValue(value);
                 }
-                BPlusTree bPlusTree = compressor.getbPlusTree();
 
                 compressor.close();
                 encodingDuration = System.nanoTime() - start;
+                BPlusTree bPlusTree = compressor.getbPlusTree();
+                BPlusDecimalTree bPlusDecimalTree = compressor.getbPlusDecimalTree();
+                long intTreeSize = bPlusTree.levelOrderTraversal(bPlusTree);
+                long decimalSize = bPlusDecimalTree.levelOrderTraversal(bPlusDecimalTree);
+                compressSize = compressSize + intTreeSize + decimalSize;
                 size = size + compressor.getSize();
                 time += encodingDuration / TIME_PRECISION;
 //                byte[] result = compressor.getBytes();
@@ -113,9 +121,14 @@ public class TestCamel {
             }
         }
         double ratio = size / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
+        double treeRatio = (double) compressSize / size;
         long compress_time = (long) (time / TIME_PRECISION);
-        System.out.println(fileName + " " + ratio);
-        System.out.println(fileName + " " +compress_time);
+        System.out.println(fileName+ " " + "sourceSize" + totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
+        System.out.println(fileName + " " + "compressSize" + size);
+        System.out.println(fileName + " " + "compressRatio" + ratio);
+        System.out.println(fileName + " " + "treeSize" + compressSize);
+        System.out.println(fileName + " " + "treeRatio" + treeRatio);
+        System.out.println(fileName + " " + compress_time);
 
 
 
@@ -487,21 +500,7 @@ public class TestCamel {
         }
     }
 
-    private void storeResult() throws IOException {
-        String filePath = STORE_RESULT;
-        File file = new File(filePath).getParentFile();
-        if (!file.exists() && !file.mkdirs()) {
-            throw new IOException("Create directory failed: " + file);
-        }
-        try (FileWriter fileWriter = new FileWriter(filePath)) {
-            fileWriter.write(ResultStructure.getHead());
-            for (Map<String, ResultStructure> result : allResult) {
-                for (ResultStructure ls : result.values()) {
-                    fileWriter.write(ls.toString());
-                }
-            }
-        }
-    }
+
 
     private ResultStructure computeAvg(List<ResultStructure> lr) {
         int num = lr.size();

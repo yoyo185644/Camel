@@ -222,6 +222,9 @@ public class BPlusDecimalTree {
 
         if (!child.isLeaf) {
             for (int j = 0; j < order; j++) {
+                if (order >= child.children.size()){
+                    break;
+                }
                 newChild.children.add(child.children.remove(order));
             }
         }
@@ -255,24 +258,11 @@ public class BPlusDecimalTree {
     }
 
     public BPlusDecimalTree buildTree(BPlusDecimalTree bPlusTree,  byte[] decimalCount, byte[] xorFlag, byte[] xorVal) {
-        int[] range = new int[]{5, 25, 125, 625};
+        int[] range = new int[]{0, 5, 25, 125, 625};
         int decimal_Count = binaryToInt(decimalCount);
-        for (int key = 1; key < range[decimal_Count-1]; key ++) {
-
-//      // 获取是否通过XOR的flag
-//        byte[] compressDecimal = compressDecimal(decimal_Count, key);
-//        byte flag = compressDecimal[2];
-//        byte[] xorVal = null;
-//        byte[] decimalVal = null;
-//
-//        if (flag == 1) { // 通过XOR之后的centerbits和保存的值
-//            xorVal = Arrays.copyOfRange(compressDecimal, 3, (int) (3 + decimalCount));
-//            decimalVal = Arrays.copyOfRange(compressDecimal, (int) (3 + decimalCount), compressDecimal.length);
-//        } else { // 没有通过XOR的保存的值
-//            decimalVal = Arrays.copyOfRange(compressDecimal, 3, compressDecimal.length);
-//        }
-        // todo 参数compressDecimal修改成 compressInt
-        bPlusTree.insert(xorFlag, xorVal, null, compressDecimal(decimal_Count, key), 1);
+        for (int key = 1; key < range[decimal_Count]; key ++) {
+            // todo 参数compressDecimal修改成 compressInt
+            bPlusTree.insert(xorFlag, xorVal, null, compressDecimal(decimal_Count, key), 1);
         }
         buildFlag = true;
         return bPlusTree;
@@ -328,6 +318,45 @@ public class BPlusDecimalTree {
 
     }
 
+
+    public long levelOrderTraversal(BPlusDecimalTree tree){
+        int size = 0;
+        if (tree == null) {
+            System.out.println("The tree is empty.");
+            return size;
+        }
+
+        Queue<BPlusDecimalTreeNode> queue = new LinkedList<>();
+        queue.offer(tree.root);
+
+        while (!queue.isEmpty()) {
+            BPlusDecimalTreeNode current = queue.poll();
+            int keySize  = current.keys.size();
+            for (int i =0; i < keySize; i++) {
+                size = size + current.keys.get(i).key.length;
+                if (current.keys.get(i).flagFalseNode!=null) {
+                    size = size + 1;
+                }
+                if (current.keys.get(i).flagTrueNode!=null) {
+                    int xorSize = current.keys.get(i).flagTrueNode.decimalNodes.size();
+                    for (int j = 0; j < xorSize; j++) {
+                        size += current.keys.get(i).flagTrueNode.decimalNodes.get(j).key.length;
+                        // 计数单位
+//                        size += 32;
+                    }
+                }
+            }
+
+            if (current.children != null) {
+                for (BPlusDecimalTreeNode child : current.children) {
+                    if (child != null) {
+                        queue.offer(child);
+                    }
+                }
+            }
+        }
+        return size;
+    }
 
 
     public static void main(String[] args) {

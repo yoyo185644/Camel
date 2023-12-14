@@ -1,10 +1,11 @@
 package yyy.ts.compress.camel;
-
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+
 import static yyy.ts.compress.camel.CamelUtils.*;
+
 class IntKeyNode{
     byte[] key;
     BPlusDecimalTree bPlusDecimalTree;
@@ -16,7 +17,6 @@ class IntKeyNode{
     }
 
 }
-
 
 
 class BPlusTreeNode {
@@ -41,14 +41,12 @@ public class BPlusTree {
     // 用一个指针永远指向下一个值
     public static KeyNode previousTSNode = null;
 
-    public static long size = 0;
+
 
     public BPlusTree(int order) {
         this.root = new BPlusTreeNode(true);
         this.order = order;
     }
-
-
 
     public void insert(BPlusDecimalTree decimalTree, byte[] key, byte[] compressInt,byte[] decimalCount, byte[] xorFlag, byte[] xorVal, byte[] compressDecimal, long timestamp) {
         // 查询是否存在整数部分，如果存在就插入到小数部分的树中
@@ -71,20 +69,6 @@ public class BPlusTree {
     private void insertNonFull(BPlusTreeNode node, BPlusDecimalTree decimalTree, byte[] key, byte[] compressInt,
                                byte[] decimalCount, byte[] xorFlag, byte[] xorVal, byte[] compressDecimal, long timestamp) {
         int i = node.keys.size() - 1;
-//        // 获取小数位数
-//        byte[] decimalCount = new byte[]{compressDecimal[0], compressDecimal[1]};
-//        // 获取是否通过XOR的flag
-//        byte flag = compressDecimal[2];
-//        byte[] xorVal = null;
-//        byte[] decimalVal = null;
-//
-//        if (flag == 1) { // 通过XOR之后的centerbits和保存的值
-//            xorVal = Arrays.copyOfRange(compressDecimal, 3, (int) (3 + bytesToLong(decimalCount)));
-//            decimalVal = Arrays.copyOfRange(compressDecimal, (int) (3 + bytesToLong(decimalCount)), compressDecimal.length);
-//        } else { // 没有通过XOR的保存的值
-//            decimalVal = Arrays.copyOfRange(compressDecimal, 3, compressDecimal.length);
-//        }
-
 
         // 对于第一次出现的整数，直接插入到二级索引 (补充逻辑)
         if (node.isLeaf) {
@@ -129,6 +113,9 @@ public class BPlusTree {
 
         if (!child.isLeaf) {
             for (int j = 0; j < order; j++) {
+                if (order >= child.children.size()){
+                    break;
+                }
                 newChild.children.add(child.children.remove(order));
             }
         }
@@ -173,6 +160,10 @@ public class BPlusTree {
             return keyNode;
         }
 
+        if (i >= node.children.size()) {
+            return searchKeyNode(node.children.get(node.children.size()-1), key);
+        }
+
         // Recur to the next level
         return searchKeyNode(node.children.get(i), key);
     }
@@ -196,6 +187,35 @@ public class BPlusTree {
         }
 
         return null; // 未找到关键字对应的值
+    }
+
+    // 层次遍历
+    public long levelOrderTraversal(BPlusTree tree){
+        int size = 0;
+        if (tree == null) {
+            System.out.println("The tree is empty.");
+            return size;
+        }
+
+        Queue<BPlusTreeNode> queue = new LinkedList<>();
+        queue.offer(tree.root);
+
+        while (!queue.isEmpty()) {
+            BPlusTreeNode current = queue.poll();
+            int keySize  = current.keys.size();
+            for (int i =0; i < keySize; i++) {
+                size = size + current.keys.get(i).key.length;
+            }
+
+            if (current.children != null) {
+                for (BPlusTreeNode child : current.children) {
+                    if (child != null) {
+                        queue.offer(child);
+                    }
+                }
+            }
+        }
+        return size;
     }
 
 
