@@ -4,6 +4,7 @@ import gr.aueb.delorean.chimp.Chimp;
 import gr.aueb.delorean.chimp.OutputBitStream;
 import yyy.ts.compress.camel.BPlusDecimalTree;
 import yyy.ts.compress.camel.BPlusTree;
+import yyy.ts.compress.camel.BPlusTree2;
 
 public class ElfOnChimpCompressor extends AbstractElfCompressor {
     private final Chimp chimp;
@@ -40,6 +41,11 @@ public class ElfOnChimpCompressor extends AbstractElfCompressor {
 
     @Override
     public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusTree2 getbPlusTre2() {
         return null;
     }
 

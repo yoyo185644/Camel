@@ -4,6 +4,7 @@ import fi.iki.yak.ts.compression.gorilla.CompressorOS;
 import gr.aueb.delorean.chimp.OutputBitStream;
 import yyy.ts.compress.camel.BPlusDecimalTree;
 import yyy.ts.compress.camel.BPlusTree;
+import yyy.ts.compress.camel.BPlusTree2;
 
 public class ElfOnGorillaCompressorOS extends AbstractElfCompressor{
     private final CompressorOS gorilla;
@@ -40,6 +41,11 @@ public class ElfOnGorillaCompressorOS extends AbstractElfCompressor{
 
     @Override
     public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusTree2 getbPlusTre2() {
         return null;
     }
 

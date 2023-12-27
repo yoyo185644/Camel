@@ -3,6 +3,7 @@ package org.urbcomp.startdb.compress.elf.compressor;
 import fi.iki.yak.ts.compression.gorilla.CompressorOS;
 import yyy.ts.compress.camel.BPlusDecimalTree;
 import yyy.ts.compress.camel.BPlusTree;
+import yyy.ts.compress.camel.BPlusTree2;
 
 public class GorillaCompressorOS implements ICompressor {
     private final CompressorOS gorilla;
@@ -28,6 +29,11 @@ public class GorillaCompressorOS implements ICompressor {
 
     @Override
     public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusTree2 getbPlusTre2() {
         return null;
     }
 

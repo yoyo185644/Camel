@@ -30,13 +30,13 @@ class FlagFalseNode{
 class DecimalNode{
 
     byte[] key;
-    int count;
+//    int count;
 
     ArrayList<TSNode> tsNodeList;
 
     public DecimalNode(byte[] key, int count, ArrayList<TSNode> tsNodeList){
         this.key = key;
-        this.count = count;
+//        this.count = count;
         this.tsNodeList = tsNodeList;
 
     }
@@ -116,7 +116,7 @@ public class BPlusDecimalTree {
                         LinkedList<DecimalNode> decimalNodes = node.flagTrueNode.decimalNodes;
                         DecimalNode decimalNode= searchDecimalNode(decimalNodes, xorVal);
                         if (decimalNode != null) {
-                            decimalNode.count ++;
+//                            decimalNode.count ++;
                             decimalNode.tsNodeList.add(tsNode);
                         } else {
                             // 说明第一次指定异或完的值
@@ -376,9 +376,9 @@ public class BPlusDecimalTree {
 //            System.out.println("Key " + key + " found: " + found);
 //        }
 
-//        BPlusDecimalTree bPlusTree = new BPlusDecimalTree(3);
-//        // 根据位数创建一个树索引
-//        bPlusTree = bPlusTree.buildTree(bPlusTree, 2);
+        BPlusDecimalTree bPlusTree = new BPlusDecimalTree(3);
+        // 根据位数创建一个树索引
+        bPlusTree = bPlusTree.buildTree(bPlusTree, new byte[]{1,0}, new byte[]{1,0}, new byte[]{1,0});
 //        bPlusTree.insert(1);
 //        bPlusTree.insert(1);
 //        bPlusTree.insert(1);

@@ -4,6 +4,7 @@ import gr.aueb.delorean.chimp.OutputBitStream;
 import org.urbcomp.startdb.compress.elf.xorcompressor.ElfXORCompressor;
 import yyy.ts.compress.camel.BPlusDecimalTree;
 import yyy.ts.compress.camel.BPlusTree;
+import yyy.ts.compress.camel.BPlusTree2;
 
 public class ElfCompressor extends AbstractElfCompressor {
     private final ElfXORCompressor xorCompressor;
@@ -40,6 +41,11 @@ public class ElfCompressor extends AbstractElfCompressor {
 
     @Override
     public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusTree2 getbPlusTre2() {
         return null;
     }
 

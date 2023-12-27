@@ -1,40 +1,42 @@
 package yyy.ts.compress.camel;
+
+import org.checkerframework.checker.units.qual.A;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-import static yyy.ts.compress.camel.CamelUtils.*;
+import static yyy.ts.compress.camel.CamelUtils.binaryToInt;
 
-class IntKeyNode{
+
+class IntKeyNode2{
     byte[] key;
-    BPlusDecimalTree bPlusDecimalTree;
 
-    public IntKeyNode(byte[] key, BPlusDecimalTree bPlusDecimalTree) {
+    ArrayList<TSNode> tsNodesList;
+
+    public IntKeyNode2(byte[] key, ArrayList<TSNode>  tsNodesList) {
         this.key = key;
-        this.bPlusDecimalTree = bPlusDecimalTree;
+        this.tsNodesList = tsNodesList;
 
     }
 
 }
 
-
-class BPlusTreeNode {
+class BPlusTreeNode2 {
     boolean isLeaf;
-    List<IntKeyNode> keys;
-    List<BPlusTreeNode> children;
+    List<IntKeyNode2> keys;
+    List<BPlusTreeNode2> children;
 
 
-    public BPlusTreeNode(boolean isLeaf) {
+    public BPlusTreeNode2(boolean isLeaf) {
         this.isLeaf = isLeaf;
         this.keys = new ArrayList<>();
         this.children = new ArrayList<>();
     }
 }
-
-
-public class BPlusTree {
-    private BPlusTreeNode root;
+public class BPlusTree2{
+    private BPlusTreeNode2 root;
 
     private int order;
 
@@ -43,49 +45,51 @@ public class BPlusTree {
 
 
 
-    public BPlusTree(int order) {
-        this.root = new BPlusTreeNode(true);
+    public BPlusTree2(int order) {
+        this.root = new BPlusTreeNode2(true);
         this.order = order;
     }
 
-    public void insert(BPlusDecimalTree decimalTree, byte[] key, byte[] compressInt,byte[] decimalCount, byte[] xorFlag, byte[] xorVal, byte[] compressDecimal, long timestamp) {
-        // 查询是否存在整数部分，如果存在就插入到小数部分的树中
-        IntKeyNode intKeyNode = searchKeyNode(root, binaryToInt(key));
-        if (intKeyNode!=null) {
-            // ***** 对于范围查询需要对于每个整数节点都建立一个DecimalTree
-            decimalTree = intKeyNode.bPlusDecimalTree;
-            decimalTree.insert(xorFlag, xorVal, compressInt, compressDecimal, timestamp);
-            intKeyNode.bPlusDecimalTree  = decimalTree;
-            return;
-        }
+    public void insert(byte[] key, byte[] compressInt,byte[] decimalCount, byte[] xorFlag, byte[] xorVal, byte[] compressDecimal, long timestamp) {
         // 检查当前树的根节点是否已经达到了其最大容量 如果已经达到最大容量，需要进行分裂操作
         if (root.keys.size() == (2 * order) - 1) {
-            BPlusTreeNode newRoot = new BPlusTreeNode(false);
+            BPlusTreeNode2 newRoot = new BPlusTreeNode2(false);
             newRoot.children.add(root);
             splitChild(newRoot, 0);
             root = newRoot;
         }
-        insertNonFull(root, decimalTree, key, compressInt, decimalCount, xorFlag, xorVal, compressDecimal, timestamp);
+        // 查询是否存在整数部分，如果存在就插入到小数部分的树中
+        IntKeyNode2 intKeyNode = searchKeyNode(root, binaryToInt(key));
+        ArrayList<TSNode> tsNodesList;
+        if (intKeyNode!=null) {
+            // ***** 对于值查询只指向原始数据
+            tsNodesList = intKeyNode.tsNodesList;
+            if (tsNodesList != null) {
+                tsNodesList.add(new TSNode(compressInt, compressDecimal,timestamp));
+            } else {
+                ArrayList<TSNode> tsNodeList = new ArrayList<>();
+                tsNodeList.add(new TSNode(compressInt, compressDecimal,timestamp));
+            }
+            intKeyNode.tsNodesList  = tsNodesList;
+
+            return;
+        }
+        insertNonFull(root,  key, compressInt, decimalCount, xorFlag, xorVal, compressDecimal, timestamp);
     }
 
-    private void insertNonFull(BPlusTreeNode node, BPlusDecimalTree decimalTree, byte[] key, byte[] compressInt,
+    private void insertNonFull(BPlusTreeNode2 node, byte[] key, byte[] compressInt,
                                byte[] decimalCount, byte[] xorFlag, byte[] xorVal, byte[] compressDecimal, long timestamp) {
         int i = node.keys.size() - 1;
 
-        // 对于第一次出现的整数，直接插入到二级索引 (补充逻辑)
+        // 对于第一次出现的整数，新建list插入
+        while (i >= 0 && binaryToInt(key) < binaryToInt(node.keys.get(i).key)) {
+            i--;
+        }
         if (node.isLeaf) {
-            while (i >= 0 && binaryToInt(key) < binaryToInt(node.keys.get(i).key)) {
-                i--;
-            }
-            decimalTree = decimalTree.buildTree(decimalTree, decimalCount, xorFlag, xorVal);
-            decimalTree.insert(xorFlag, xorVal, compressInt, compressDecimal, timestamp);
-
-            node.keys.add(i + 1, new IntKeyNode(compressInt, decimalTree));
-
+            ArrayList<TSNode> tsNodeList = new ArrayList<>();
+            tsNodeList.add(new TSNode(compressInt, compressDecimal,timestamp));
+            node.keys.add(i + 1, new IntKeyNode2(compressInt, tsNodeList));
         } else {
-            while (i >= 0 && binaryToInt(key) < binaryToInt(node.keys.get(i).key)) {
-                i--;
-            }
             i++;
 
             try {
@@ -95,7 +99,7 @@ public class BPlusTree {
                         i++;
                     }
                 }
-                insertNonFull(node.children.get(i), decimalTree, key, compressInt, decimalCount, xorFlag, xorVal, compressDecimal, timestamp);
+                insertNonFull(node.children.get(i), key, compressInt, decimalCount, xorFlag, xorVal, compressDecimal, timestamp);
             }catch (Exception e) {
                 System.out.println(e.getMessage());
             }
@@ -104,9 +108,9 @@ public class BPlusTree {
     }
 
 
-    private void splitChild(BPlusTreeNode parent, int index) {
-        BPlusTreeNode child = parent.children.get(index);
-        BPlusTreeNode newChild = new BPlusTreeNode(child.isLeaf);
+    private void splitChild(BPlusTreeNode2 parent, int index) {
+        BPlusTreeNode2 child = parent.children.get(index);
+        BPlusTreeNode2 newChild = new BPlusTreeNode2(child.isLeaf);
 
         parent.keys.add(index, child.keys.get(order - 1));
 
@@ -124,13 +128,16 @@ public class BPlusTree {
         }
 
         parent.children.add(index + 1, newChild);
+
+        // 递归将非叶子节点的值清空
+
     }
 
     public boolean search(byte[] key) {
         return searchKey(root, key);
     }
 
-    private boolean searchKey(BPlusTreeNode node, byte[] key) {
+    private boolean searchKey(BPlusTreeNode2 node, byte[] key) {
         int i = 0;
         while (i < node.keys.size() && binaryToInt(key) > binaryToInt(node.keys.get(i).key)) {
             i++;
@@ -150,7 +157,7 @@ public class BPlusTree {
         return searchKey(node.children.get(i), key);
     }
 
-    private IntKeyNode searchKeyNode(BPlusTreeNode node, int key) {
+    private IntKeyNode2 searchKeyNode(BPlusTreeNode2 node, int key) {
         int i = 0;
         while (i < node.keys.size() && key > binaryToInt(node.keys.get(i).key)) {
             i++;
@@ -158,8 +165,8 @@ public class BPlusTree {
 
         if (node.isLeaf) {
             // Key not found
-            List<IntKeyNode> keyNodes = node.keys;
-            IntKeyNode keyNode = binarySearchByKey(keyNodes, key);
+            List<IntKeyNode2> keyNodes = node.keys;
+            IntKeyNode2 keyNode = binarySearchByKey(keyNodes, key);
             return keyNode;
         }
 
@@ -171,7 +178,7 @@ public class BPlusTree {
         return searchKeyNode(node.children.get(i), key);
     }
 
-    private static IntKeyNode binarySearchByKey(List<IntKeyNode> keys, Integer targetKey) {
+    private static IntKeyNode2 binarySearchByKey(List<IntKeyNode2> keys, Integer targetKey) {
         int low = 0;
         int high = keys.size() - 1;
 
@@ -193,28 +200,25 @@ public class BPlusTree {
     }
 
     // 层次遍历
-    public long levelOrderTraversal(BPlusTree tree){
-        long size = 0;
+    public long levelOrderTraversal(BPlusTree2 tree){
+        int size = 0;
         if (tree == null) {
             System.out.println("The tree is empty.");
             return size;
         }
 
-        Queue<BPlusTreeNode> queue = new LinkedList<>();
+        Queue<BPlusTreeNode2> queue = new LinkedList<>();
         queue.offer(tree.root);
 
         while (!queue.isEmpty()) {
-            BPlusTreeNode current = queue.poll();
+            BPlusTreeNode2 current = queue.poll();
             int keySize  = current.keys.size();
             for (int i =0; i < keySize; i++) {
                 size = size + current.keys.get(i).key.length;
-                if (current.isLeaf) {
-                    size = size + current.keys.get(i).bPlusDecimalTree.levelOrderTraversal(current.keys.get(i).bPlusDecimalTree);
-                }
             }
 
             if (current.children != null) {
-                for (BPlusTreeNode child : current.children) {
+                for (BPlusTreeNode2 child : current.children) {
                     if (child != null) {
                         queue.offer(child);
                     }
@@ -228,7 +232,7 @@ public class BPlusTree {
 
     public static void main(String[] args) {
         // 创建一个B+树，假设阶数为3
-        BPlusTree bPlusTree = new BPlusTree(3);
+        BPlusTree2 bPlusTree = new BPlusTree2(3);
         BPlusDecimalTree deciamlPlusTree = new BPlusDecimalTree(3);
         // 根据位数创建一个小数位数的索引
 //        deciamlPlusTree = deciamlPlusTree.buildTree(deciamlPlusTree, 2);

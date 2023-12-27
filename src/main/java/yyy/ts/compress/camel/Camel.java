@@ -4,6 +4,7 @@ import gr.aueb.delorean.chimp.OutputBitStream;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import static yyy.ts.compress.camel.CamelUtils.*;
@@ -11,6 +12,9 @@ public class Camel {
 
     private long storedVal = 0;
     private long firstVal = 0;
+
+    // 默认10000 对应 block大小位1000
+    private final static int outStreamSize = 100000;
     private boolean first = true;
     private int size;
     private final static long END_SIGN = Double.doubleToLongBits(Double.NaN);
@@ -29,13 +33,15 @@ public class Camel {
 
     private static BPlusTree bPlusTree;
 
+    private static BPlusTree2 bPlusTree2;
+
     private static BPlusDecimalTree bPlusDecimalTree;
 
 
 
     // We should have access to the series?
     public Camel() {
-        out = new OutputBitStream(new byte[10000]);  // for elf, we need one more bit for each at the worst case
+        out = new OutputBitStream(new byte[outStreamSize]);  // for elf, we need one more bit for each at the worst case
         size = 0;
     }
 
@@ -105,16 +111,32 @@ public class Camel {
 
         if (TreeFlag) {
             TreeFlag = false;
+            // ***** 范围 *****
             bPlusTree = new BPlusTree(3);
+            // ***** 值 *****
+            bPlusTree2 = new BPlusTree2(3);
             bPlusDecimalTree = new BPlusDecimalTree(3);
-            // 根据位数创建一个小数位数的索引
             bPlusDecimalTree = bPlusDecimalTree.buildTree(bPlusDecimalTree, compressVal.get("decimalCount"), compressVal.get("xorFlag"), compressVal.get("xorVal"));
+
+
         } else {
-            bPlusTree.insert(bPlusDecimalTree, compressVal.get("compressInt"), compressVal.get("compressInt"), compressVal.get("decimalCount"),
+//            System.out.println("compressInt" + Arrays.toString(compressVal.get("compressInt")) + ";" + "decimalCount" + Arrays.toString(compressVal.get("decimalCount")) +
+//                    "xorFlag" + Arrays.toString(compressVal.get("xorFlag")) + "xorVal" + Arrays.toString(compressVal.get("xorVal")) + "compressDecimal" + Arrays.toString(compressVal.get("compressDecimal")));
+            // ***** 范围 ***** 对于范围查询就是每个整数后面加一颗树
+            bPlusTree.insert(new BPlusDecimalTree(3), compressVal.get("compressInt"), compressVal.get("compressInt"), compressVal.get("decimalCount"),
                     compressVal.get("xorFlag"), compressVal.get("xorVal"), compressVal.get("compressDecimal"), 1);
+            // ***** 值 ***** 对于值查询就是建立两颗树
+            bPlusTree2.insert(compressVal.get("compressInt"), compressVal.get("compressInt"), compressVal.get("decimalCount"),
+                    compressVal.get("xorFlag"), compressVal.get("xorVal"), compressVal.get("compressDecimal"), 1);
+            bPlusDecimalTree.insert(compressVal.get("xorFlag"), compressVal.get("xorVal"), compressVal.get("compressInt"), compressVal.get("compressDecimal"), 1);
+
         }
+        // ***** 范围 *****
         this.setbPlusTree(bPlusTree);
+//         ***** 对于值查询就是统一成一颗树
+        this.setbPlusTree2(bPlusTree2);
         this.setbPlusDecimalTree(bPlusDecimalTree);
+
         return size;
     }
 
@@ -287,6 +309,28 @@ public class Camel {
             compressVal.put("compressInt", convertToBinary((int) first_diff_value, 16));
             size += 16;
         }
+        // 针对BP数据集
+//        if (diff_value >=0 && diff_value < 16){ // [0,2)
+//            out.writeInt(0, 2); // 00
+//            out.writeInt((int) diff_value, 1);
+//            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 4));
+//            size += 1;
+//        } else if (diff_value >=16 && diff_value < 128) { // [2,4)
+//            out.writeInt(1, 2); // 01
+//            out.writeInt((int) diff_value, 2);
+//            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 7));
+//            size += 2;
+//        } else if (diff_value >=128 && diff_value < 1024) { // [4,8)
+//            out.writeInt(2, 2); // 10
+//            out.writeInt((int) diff_value, 3);
+//            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 10));
+//            size += 3;
+//        } else {
+//            out.writeInt(3, 2); //11  // [8,...)
+//            out.writeInt((int) diff_value, 16); // 暂用16个字节表示
+//            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 13));
+//            size += 16;
+//        }
         storedVal = int_value;
 
         return this.size;
@@ -298,12 +342,20 @@ public class Camel {
         return bPlusTree;
     }
 
-    public BPlusDecimalTree getbPlusDecimalTree() {
-        return bPlusDecimalTree;
-    }
-
     public void setbPlusTree(BPlusTree bPlusTree) {
         Camel.bPlusTree = bPlusTree;
+    }
+
+    public BPlusTree2 getbPlusTree2() {
+        return bPlusTree2;
+    }
+
+    public void setbPlusTree2(BPlusTree2 bPlusTree) {
+        Camel.bPlusTree2 = bPlusTree2;
+    }
+
+    public BPlusDecimalTree getbPlusDecimalTree() {
+        return bPlusDecimalTree;
     }
 
     public void setbPlusDecimalTree(BPlusDecimalTree bPlusDecimalTree) {

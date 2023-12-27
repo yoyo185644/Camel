@@ -3,6 +3,7 @@ package org.urbcomp.startdb.compress.elf.compressor;
 import gr.aueb.delorean.chimp.Chimp;
 import yyy.ts.compress.camel.BPlusDecimalTree;
 import yyy.ts.compress.camel.BPlusTree;
+import yyy.ts.compress.camel.BPlusTree2;
 
 public class ChimpCompressor implements ICompressor {
     private final Chimp chimp;
@@ -27,6 +28,11 @@ public class ChimpCompressor implements ICompressor {
 
     @Override
     public BPlusTree getbPlusTree() {
+        return null;
+    }
+
+    @Override
+    public BPlusTree2 getbPlusTre2() {
         return null;
     }
 

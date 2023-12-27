@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.urbcomp.startdb.compress.elf.compressor.*;
 import org.urbcomp.startdb.compress.elf.decompressor.*;
 import yyy.ts.compress.camel.BPlusDecimalTree;
+import yyy.ts.compress.camel.BPlusTree2;
 import yyy.ts.compress.camel.CamelDecompressor;
 import org.apache.poi.ss.usermodel.*;
 
@@ -34,29 +35,29 @@ public class TestCamel {
 
     private static final String[] FILENAMES = {
 //            "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
-            "/City-temp.csv",
-            "/IR-bio-temp.csv",
-            "/Wind-Speed.csv",
-            "/PM10-dust.csv",
-            "/Stocks-UK.csv",
-            "/Stocks-USA.csv",
-            "/Stocks-DE.csv",
-            "/Dew-point-temp.csv",
-            "/Air-pressure.csv",
-            "/Basel-wind.csv",
-            "/Basel-temp.csv",
+//            "/City-temp.csv",
+//            "/IR-bio-temp.csv",
+//            "/Wind-Speed.csv",
+//            "/PM10-dust.csv",
+//            "/Stocks-UK.csv",
+//            "/Stocks-USA.csv",
+//            "/Stocks-DE.csv",
+//            "/Dew-point-temp.csv",
+//            "/Air-pressure.csv",
+//            "/Basel-wind.csv",
+//            "/Basel-temp.csv",
             "/Bitcoin-price.csv",
-            "/Bird-migration.csv",
-            "/Air-sensor.csv",
+//            "/Bird-migration.csv",
+//            "/Air-sensor.csv",
 
-            "/Food-price.csv",
-            "/electric_vehicle_charging.csv",
-            "/Blockchain-tr.csv",
-            "/SSD-bench.csv",
-            "/City-lat.csv",
-            "/City-lon.csv",
-            "/POI-lat.csv",
-            "/POI-lon.csv",
+//            "/Food-price.csv",
+//            "/electric_vehicle_charging.csv",
+//            "/Blockchain-tr.csv",
+//            "/SSD-bench.csv",
+//            "/City-lat.csv",
+//            "/City-lon.csv",
+//            "/POI-lat.csv",
+//            "/POI-lon.csv",
 
     };
     private static final String STORE_RESULT = "src/test/resources/result/result_camel.csv";
@@ -78,7 +79,8 @@ public class TestCamel {
 
         float totalBlocks = 0;
         double[] values;
-        long compressSize = 0l;
+        long treeSize2 = 0l;
+        long treeSize = 0l;
         long size = 0l;
         double time = 0;
         while ((values = fileReader.nextBlock()) != null) {
@@ -100,10 +102,13 @@ public class TestCamel {
                 compressor.close();
                 encodingDuration = System.nanoTime() - start;
                 BPlusTree bPlusTree = compressor.getbPlusTree();
+                BPlusTree2 bPlusTree2 = compressor.getbPlusTre2();
                 BPlusDecimalTree bPlusDecimalTree = compressor.getbPlusDecimalTree();
                 long intTreeSize = bPlusTree.levelOrderTraversal(bPlusTree);
-                long decimalSize = bPlusDecimalTree.levelOrderTraversal(bPlusDecimalTree);
-                compressSize = compressSize + intTreeSize + decimalSize;
+                long intTreeSize2 = bPlusTree2.levelOrderTraversal(bPlusTree2);
+                long decimalSize2 = bPlusDecimalTree.levelOrderTraversal(bPlusDecimalTree);
+                treeSize = treeSize + intTreeSize;
+                treeSize2 = treeSize2 + intTreeSize2 + decimalSize2;
                 size = size + compressor.getSize();
                 time += encodingDuration / TIME_PRECISION;
 //                byte[] result = compressor.getBytes();
@@ -121,13 +126,16 @@ public class TestCamel {
             }
         }
         double ratio = size / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
-        double treeRatio = (double) compressSize / size;
+        double treeRatio = (double) treeSize / size;
+        double treeRatio2 = (double) treeSize2 / size;
         long compress_time = (long) (time / TIME_PRECISION);
-        System.out.println(fileName+ " " + "sourceSize" + totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
-        System.out.println(fileName + " " + "compressSize" + size);
-        System.out.println(fileName + " " + "compressRatio" + ratio);
-        System.out.println(fileName + " " + "treeSize" + compressSize);
-        System.out.println(fileName + " " + "treeRatio" + treeRatio);
+        System.out.println(fileName+ " " + "sourceSize:" + totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
+        System.out.println(fileName + " " + "compressSize:" + size);
+        System.out.println(fileName + " " + "compressRatio:" + ratio);
+        System.out.println(fileName + " " + "treeSize:" + treeSize);
+        System.out.println(fileName + " " + "treeRatio:" + treeRatio);
+        System.out.println(fileName + " " + "treeSize2:" + treeSize2);
+        System.out.println(fileName + " " + "treeRatio2:" + treeRatio2);
         System.out.println(fileName + " " + compress_time);
 
 
