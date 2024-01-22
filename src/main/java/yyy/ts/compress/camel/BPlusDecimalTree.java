@@ -358,6 +358,41 @@ public class BPlusDecimalTree {
         return size;
     }
 
+    public List<TSNode> getAllLeaf(BPlusDecimalTree tree){
+        List<TSNode> res = new ArrayList<>();
+        if (tree == null) {
+            System.out.println("The tree is empty.");
+            return null;
+        }
+
+        Queue<BPlusDecimalTreeNode> queue = new LinkedList<>();
+        queue.offer(tree.root);
+
+        while (!queue.isEmpty()) {
+            BPlusDecimalTreeNode current = queue.poll();
+            int keySize  = current.keys.size();
+            for (int i =0; i < keySize; i++) {
+                if (current.keys.get(i).flagFalseNode!=null) {
+                  res.addAll(current.keys.get(i).flagFalseNode.tsNodeList);
+                }
+                if (current.keys.get(i).flagTrueNode!=null) {
+                    for (int j = 0; j< current.keys.get(i).flagTrueNode.decimalNodes.size(); j++) {
+                        res.addAll(current.keys.get(i).flagTrueNode.decimalNodes.get(j).tsNodeList);
+                    }
+                }
+            }
+
+            if (current.children != null) {
+                for (BPlusDecimalTreeNode child : current.children) {
+                    if (child != null && child.isLeaf) {
+                        queue.offer(child);
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
 
     public static void main(String[] args) {
         // 创建一个B+树，假设阶数为3

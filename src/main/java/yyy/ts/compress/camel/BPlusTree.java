@@ -50,7 +50,7 @@ public class BPlusTree {
 
     public void insert(BPlusDecimalTree decimalTree, byte[] key, byte[] compressInt,byte[] decimalCount, byte[] xorFlag, byte[] xorVal, byte[] compressDecimal, long timestamp) {
         // 查询是否存在整数部分，如果存在就插入到小数部分的树中
-        IntKeyNode intKeyNode = searchKeyNode(root, binaryToInt(key));
+        IntKeyNode intKeyNode = searchKeyNode(root, integerBinaryToInt(key));
         if (intKeyNode!=null) {
             // ***** 对于范围查询需要对于每个整数节点都建立一个DecimalTree
             decimalTree = intKeyNode.bPlusDecimalTree;
@@ -74,7 +74,7 @@ public class BPlusTree {
 
         // 对于第一次出现的整数，直接插入到二级索引 (补充逻辑)
         if (node.isLeaf) {
-            while (i >= 0 && binaryToInt(key) < binaryToInt(node.keys.get(i).key)) {
+            while (i >= 0 && integerBinaryToInt(key) < integerBinaryToInt(node.keys.get(i).key)) {
                 i--;
             }
             decimalTree = decimalTree.buildTree(decimalTree, decimalCount, xorFlag, xorVal);
@@ -83,7 +83,7 @@ public class BPlusTree {
             node.keys.add(i + 1, new IntKeyNode(compressInt, decimalTree));
 
         } else {
-            while (i >= 0 && binaryToInt(key) < binaryToInt(node.keys.get(i).key)) {
+            while (i >= 0 && integerBinaryToInt(key) < integerBinaryToInt(node.keys.get(i).key)) {
                 i--;
             }
             i++;
@@ -91,7 +91,7 @@ public class BPlusTree {
             try {
                 if (node.children.get(i).keys.size() == (2 * order) - 1) {
                     splitChild(node, i);
-                    if (binaryToInt(key) > binaryToInt(node.keys.get(i).key)) {
+                    if (integerBinaryToInt(key) > integerBinaryToInt(node.keys.get(i).key)) {
                         i++;
                     }
                 }
@@ -132,7 +132,7 @@ public class BPlusTree {
 
     private boolean searchKey(BPlusTreeNode node, byte[] key) {
         int i = 0;
-        while (i < node.keys.size() && binaryToInt(key) > binaryToInt(node.keys.get(i).key)) {
+        while (i < node.keys.size() && integerBinaryToInt(key) > integerBinaryToInt(node.keys.get(i).key)) {
             i++;
         }
 
@@ -150,9 +150,9 @@ public class BPlusTree {
         return searchKey(node.children.get(i), key);
     }
 
-    private IntKeyNode searchKeyNode(BPlusTreeNode node, int key) {
+    public IntKeyNode searchKeyNode(BPlusTreeNode node, int key) {
         int i = 0;
-        while (i < node.keys.size() && key > binaryToInt(node.keys.get(i).key)) {
+        while (i < node.keys.size() && key > integerBinaryToInt(node.keys.get(i).key)) {
             i++;
         }
 
@@ -178,7 +178,7 @@ public class BPlusTree {
         while (low <= high) {
             int mid = (low + high) / 2;
 
-            int compareResult = targetKey.compareTo(binaryToInt(keys.get(mid).key));
+            int compareResult = targetKey.compareTo(integerBinaryToInt(keys.get(mid).key));
 
             if (compareResult == 0) {
                 return keys.get(mid); // 找到关键字对应的值
@@ -224,6 +224,10 @@ public class BPlusTree {
         return size;
     }
 
+
+    public BPlusTreeNode getRoot(BPlusTree tree) {
+        return tree.root;
+    }
 
 
     public static void main(String[] args) {

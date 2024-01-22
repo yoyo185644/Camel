@@ -9,6 +9,8 @@ import java.util.Map;
 
 public class CaseStudy02 {
     private static final String FILE_PATH = "src/test/resources/ElfTestData";
+
+    private int preVal;
     private static final String[] FILENAMES = {
             "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
             "/Air-pressure.csv",
@@ -51,6 +53,7 @@ public class CaseStudy02 {
             }
             double doubleValue = Double.parseDouble(value);
             int intValue = (int) doubleValue;
+
             int_list.add(intValue);
         }
         Map<Integer, Integer> diffInterNumMap = new HashMap<>();

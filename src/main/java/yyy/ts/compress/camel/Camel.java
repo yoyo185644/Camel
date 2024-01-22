@@ -277,6 +277,16 @@ public class Camel {
         long diff_value =  int_value - storedVal;
         // 用于建索引
         long first_diff_value = int_value - firstVal;
+        if (Math.abs(first_diff_value) >=0 && Math.abs(first_diff_value) < 2)
+        {
+            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 2));
+        }else if (Math.abs(first_diff_value) >=2 && Math.abs(first_diff_value) < 4){
+            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 3));
+        } else if (Math.abs(first_diff_value) >=4 && Math.abs(first_diff_value) < 8){
+            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 4));
+        } else {
+            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 16));
+        }
         // 用一个bit表示差值的正负 0表示负数 1表示正数
         size += 1;
         if (diff_value < 0){
@@ -291,22 +301,18 @@ public class Camel {
         if (diff_value >=0 && diff_value < 2){ // [0,2)
             out.writeInt(0, 2); // 00
             out.writeInt((int) diff_value, 1);
-            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 1));
             size += 1;
         } else if (diff_value >=2 && diff_value < 4) { // [2,4)
             out.writeInt(1, 2); // 01
             out.writeInt((int) diff_value, 2);
-            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 2));
             size += 2;
         } else if (diff_value >=4 && diff_value < 8) { // [4,8)
             out.writeInt(2, 2); // 10
             out.writeInt((int) diff_value, 3);
-            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 3));
             size += 3;
         } else {
             out.writeInt(3, 2); //11  // [8,...)
             out.writeInt((int) diff_value, 16); // 暂用16个字节表示
-            compressVal.put("compressInt", convertToBinary((int) first_diff_value, 16));
             size += 16;
         }
         // 针对BP数据集
