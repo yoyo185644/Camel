@@ -146,6 +146,7 @@ public class ElfXORCompressor {
                     thisSize += 10 + centerBits;
                 }
             }
+            System.out.println(storedTrailingZeros);
 
             storedVal = value;
         }

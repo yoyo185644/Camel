@@ -71,93 +71,120 @@ public class CamelDecompressor {
     }
 
     private void next() throws IOException {
+        readNum ++;
         if (first) {
             first = false;
-            double fistVal = in.readLong(64);
+            long fistVal_long = in.readLong(64);
+            double fistVal = Double.longBitsToDouble(fistVal_long);
             storedVal = (int)fistVal;
-            if (readNum == DEFAULT_BLOCK_SIZE) {
-                endOfStream = true;
-            }
-
         } else {
+            if (readNum-1 == DEFAULT_BLOCK_SIZE) {
+                endOfStream = true;
+                return;
+            }
             nextValue();
         }
-        readNum ++;
     }
 
     private double nextValue() throws IOException {
         // 读取第一位符号位 0表示负数 1表示正数
-        int symbol = in.readBit();
         long intVal = readInt();
         double decimal = readDecimal();
-        return (intVal + decimal)*(symbol==0?-1:1);
+        return (intVal + decimal);
     }
 
     // 解压整数部分
     private long readInt() throws IOException {
-        // 读取差值的符号 0表示负数 1表示正数
-        int diffSymbol = in.readBit();
-        // 读取整数的位数 0:0-1 1:2-3 2:3-7 3:8-..
         int integerNum = in.readInt(2);
         long diffVal;
         if (integerNum == 0) {
-            diffVal = in.readInt(1);
+            diffVal = 0;
         } else if (integerNum == 1) {
-            diffVal = in.readInt(2);
+            diffVal = 1;
         } else if (integerNum == 2) {
-            diffVal = in.readInt(3);
+            diffVal = -1;
         } else {
-            diffVal = in.readInt(8);
+            // 读取差值的符号 0表示负数 1表示正数
+            int diffSymbol = in.readBit();
+            int range = in.readInt(1);
+            if (range == 0) {
+                diffVal = in.readInt(3);
+            } else {
+                diffVal = in.readInt(16);
+            }
+            diffVal = (diffSymbol == 0 ? -1: 1) * diffVal;
         }
-        return (diffSymbol == 0 ? -1: 1) * diffVal + storedVal;
+            storedVal = diffVal + storedVal;
+            return  storedVal;
+
     }
 
 
     // 解压小数部分
     private double readDecimal() throws IOException {
         // 读取小数位数
-        int decimalCount = in.readInt(3);
-        if (decimalCount == 0)
+        int decimal_count = in.readInt(2) + 1;
+        if (decimal_count == 0)
             return 0.0;
         // 是否计算m的值
         int isM = in.readInt(1);
         long xor, xorCount, leadingZeroSNum;
         double decimalVal, m;
-        if (isM == 1){
+        String xorString = "";
+        if (isM == 1) {
             // 查找保存的xor值
-            if (decimalCount == 1) {
-                xorCount = 1;
-                xor = in.readBits();
-                leadingZeroSNum = leadingZerosNumOne[0];
-            } else if (decimalCount == 2) {
-                xorCount = in.readInt(1);
-                xor = in.readInt((int) (xorCount+1));
-                leadingZeroSNum = leadingZerosNumTwo[(int) xorCount];
-            } else if (decimalCount == 3) {
-                xorCount = in.readInt(2);
-                xor = in.readInt((int) (xorCount+1));
-                leadingZeroSNum = leadingZerosNumThree[(int) xorCount];
+            xor = in.readInt(decimal_count);
+            // 根据leadingZeroSNum和XOR拼接xorVal
+            long shiftedValue = xor << (52 - decimal_count);
+            xorString = String.format("%64s", Long.toBinaryString(shiftedValue)).replace(' ', '0');
+        }
+                // 将m用二进制数表示
+        int m_int = 0;
+        if (decimal_count <= 1) { // 如果是1 直接往后读decimal_count+1位
+            m_int = in.readInt(decimal_count+1);
+        } else if (decimal_count ==2) {
+            int tmep = in.readInt(1);
+            if ( tmep == 0) {
+                m_int = in.readInt(3);
+            }  else {
+                m_int = in.readInt(5);
+            }
+        } else if (decimal_count == 3) {
+            int tmep = in.readInt(2);
+            if ( tmep == 0) {
+                m_int = in.readInt(1);
+            }  else if (tmep == 1) {
+                m_int = in.readInt(3);
+            } else if (tmep == 2) {
+                m_int = in.readInt(5);
             } else {
-                xorCount = in.readInt(2);
-                xor = in.readInt((int) (xorCount+1));
-                leadingZeroSNum = leadingZerosNumFour[(int) xorCount];
+                m_int = in.readInt(mValueBits[decimal_count-1]);
+            }
+        } else {
+            int tmep = in.readInt(2);
+            if (tmep == 0) {
+                m_int = in.readInt(4);
+            } else if (tmep == 1) {
+                m_int = in.readInt(6);
+            } else if (tmep == 2) {
+                m_int = in.readInt(8);
+            } else {
+                m_int = in.readInt(mValueBits[decimal_count - 1]);
             }
 
-            // 根据leadingZeroSNum和XOR拼接xorVal
-            long shiftedValue = (long)xor << (64-xorCount-leadingZeroSNum);
-            String xorString = String.format("%64s", Long.toBinaryString(shiftedValue)).replace(' ', '0');
+        }
 
-            // 将m用二进制数表示
-            m = in.readLong(mValueBits[decimalCount-1])/Math.pow(10, decimalCount) + 1;
+
+        if (isM == 1){
+            m = m_int/Math.pow(10, decimal_count) + 1;
             long m_prime = Double.doubleToLongBits(m);
             String mString = Long.toBinaryString(m_prime);
             String res = xorBinaryStrings(xorString, mString);
             long decimalLong = Long.parseLong(res, 2);
             // 使用 Double.longBitsToDouble 将 long 转换为 double
             decimalVal = Double.longBitsToDouble(decimalLong) - 1;
-
         } else {
-           m = in.readLong(mValueBits[decimalCount-1])/Math.pow(10, decimalCount);
+           m = m_int /Math.pow(10, decimal_count);
            decimalVal = m;
         }
 

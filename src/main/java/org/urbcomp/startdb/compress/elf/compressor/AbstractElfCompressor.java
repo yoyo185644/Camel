@@ -46,7 +46,7 @@ public abstract class AbstractElfCompressor implements ICompressor {
         }
         // 擦除之后的v
         Double vPrime = Double.longBitsToDouble(vPrimeLong);
-        System.out.println(vPrime);
+//        System.out.println(vPrime);
         // 保存betaStar
         size += xorCompress(vPrimeLong);
     }

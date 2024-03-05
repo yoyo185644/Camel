@@ -170,6 +170,7 @@ public class ChimpN {
         storedValues[current] = value;
         index++;
         indices[key] = index;
+        System.out.println(trailingZeros);
         return thisSize;
     }
 

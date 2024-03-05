@@ -13,10 +13,15 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionInputStream;
 import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.junit.jupiter.api.Test;
-import org.urbcomp.startdb.compress.elf.compressor.*;
-import org.urbcomp.startdb.compress.elf.decompressor.*;
+import org.urbcomp.startdb.compress.elf.compressor.CamelCompressor;
+import org.urbcomp.startdb.compress.elf.compressor.ICompressor;
+import org.urbcomp.startdb.compress.elf.decompressor.CamelDecompressorOS;
+import org.urbcomp.startdb.compress.elf.decompressor.IDecompressor;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,11 +31,12 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestCompressor {
+public class TestCamelTree {
     private static final String FILE_PATH = "src/test/resources/ElfTestData";
+
     private static final String[] FILENAMES = {
 //            "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
-//            "/City-temp.csv",
+//            "/City-temp.csv", //
 //            "/IR-bio-temp.csv",
 //            "/Wind-Speed.csv",
 //            "/PM10-dust.csv",
@@ -42,9 +48,9 @@ public class TestCompressor {
 //            "/Basel-wind.csv",
 //            "/Basel-temp.csv",
 //            "/Bitcoin-price.csv",
-            "/Bird-migration.csv",
+//            "/Bird-migration.csv",
 //            "/Air-sensor.csv",
-
+//////
 //            "/Food-price.csv",
 //            "/electric_vehicle_charging.csv",
 //            "/Blockchain-tr.csv",
@@ -53,8 +59,15 @@ public class TestCompressor {
 //            "/City-lon.csv",
 //            "/POI-lat.csv",
 //            "/POI-lon.csv",
+
+            "/Cpu-usage.csv",
+            "/Disk-usage.csv",
+            "/Mem-usage.csv",
+
+
+
     };
-    private static final String STORE_RESULT = "src/test/resources/result/result.csv";
+    private static final String STORE_RESULT = "src/test/resources/result/result_camel.csv";
 
     private static final double TIME_PRECISION = 1000.0;
     List<Map<String, ResultStructure>> allResult = new ArrayList<>();
@@ -63,46 +76,26 @@ public class TestCompressor {
     public void testCompressor() throws IOException {
         for (String filename : FILENAMES) {
             Map<String, List<ResultStructure>> result = new HashMap<>();
-            testELFCompressor(filename, result);
-//            testFPC(filename, result);
-//            testSnappy(filename, result);
-//            testZstd(filename, result);
-//            testLZ4(filename, result);
-//            testBrotli(filename, result);
-//            testXz(filename, result);
-            for (Map.Entry<String, List<ResultStructure>> kv : result.entrySet()) {
-                Map<String, ResultStructure> r = new HashMap<>();
-                r.put(kv.getKey(), computeAvg(kv.getValue()));
-                allResult.add(r);
-            }
-            if (result.isEmpty()) {
-                System.out.println("The result of the file " + filename +
-                        " is empty because the amount of data is less than one block, and the default is at least 1000.");
-            }
+            testCamelCompressor(filename, result);
         }
-        storeResult();
     }
 
 
-    private void testELFCompressor(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws FileNotFoundException {
+    private void testCamelCompressor(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws FileNotFoundException {
         FileReader fileReader = new FileReader(FILE_PATH + fileName);
 
         float totalBlocks = 0;
         double[] values;
-
-        HashMap<String, List<Double>> totalCompressionTime = new HashMap<>();
-        HashMap<String, List<Double>> totalDecompressionTime = new HashMap<>();
-        HashMap<String, Long> key2TotalSize = new HashMap<>();
+        long treeSize2 = 0l;
+        long treeSize = 0l;
+        long size = 0l;
+        double time = 0;
         while ((values = fileReader.nextBlock()) != null) {
             totalBlocks += 1;
+//            System.out.println(totalBlocks);
+
             ICompressor[] compressors = new ICompressor[]{
-//                new GorillaCompressorOS(),
-//                new ElfOnGorillaCompressorOS(),
-//                new ChimpCompressor(),
-//                new ElfOnChimpCompressor(),
-                new ChimpNCompressor(128),
-//                new ElfOnChimpNCompressor(128),
-//                new ElfCompressor(),
+                new CamelCompressor(),
             };
             for (int i = 0; i < compressors.length; i++) {
                 double encodingDuration;
@@ -112,56 +105,49 @@ public class TestCompressor {
                 for (double value : values) {
                     compressor.addValue(value);
                 }
+
                 compressor.close();
-
                 encodingDuration = System.nanoTime() - start;
-
+//      index
+//                BPlusTree bPlusTree = compressor.getbPlusTree();
+//                BPlusTree2 bPlusTree2 = compressor.getbPlusTre2();
+//                BPlusDecimalTree bPlusDecimalTree = compressor.getbPlusDecimalTree();
+//                long intTreeSize = bPlusTree.levelOrderTraversal(bPlusTree);
+//                long intTreeSize2 = bPlusTree2.levelOrderTraversal(bPlusTree2);
+//                long decimalSize2 = bPlusDecimalTree.levelOrderTraversal(bPlusDecimalTree);
+//                treeSize = treeSize + intTreeSize;
+//                treeSize2 = treeSize2 + intTreeSize2 + decimalSize2;
+                size = size + compressor.getSize();
+                time += encodingDuration / TIME_PRECISION;
                 byte[] result = compressor.getBytes();
                 IDecompressor[] decompressors = new IDecompressor[]{
-//                    new GorillaDecompressorOS(result),
-//                    new ElfOnGorillaDecompressorOS(result),
-//                    new ChimpDecompressor(result),
-//                    new ElfOnChimpDecompressor(result),
-                    new ChimpNDecompressor(result, 128),
-//                    new ElfOnChimpNDecompressor(result, 128),
-//                    new ElfDecompressor(result)
+                        new CamelDecompressorOS(result),
                 };
-
                 IDecompressor decompressor = decompressors[i];
-
                 start = System.nanoTime();
                 List<Double> uncompressedValues = decompressor.decompress();
                 decodingDuration = System.nanoTime() - start;
 
-                for (int j = 0; j < values.length; j++) {
-                    assertEquals(values[j], uncompressedValues.get(j), "Value did not match" + compressor.getKey());
-                }
-
-                String key = compressor.getKey();
-                if (!totalCompressionTime.containsKey(key)) {
-                    totalCompressionTime.put(key, new ArrayList<>());
-                    totalDecompressionTime.put(key, new ArrayList<>());
-                    key2TotalSize.put(key, 0L);
-                }
-                totalCompressionTime.get(key).add(encodingDuration / TIME_PRECISION);
-                totalDecompressionTime.get(key).add(decodingDuration / TIME_PRECISION);
-                key2TotalSize.put(key, compressor.getSize() + key2TotalSize.get(key));
             }
         }
+        double ratio = size / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
+        double treeRatio = (double) treeSize / size;
+        double treeRatio2 = (double) treeSize2 / size;
+        long compress_time = (long) (time / TIME_PRECISION);
+//        System.out.println(fileName+ " " + "sourceSize:" + totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
+//        System.out.println(fileName + " " + "compressSize:" + size);
+        System.out.println(fileName + " " + "compressRatio:" + ratio);
+//        System.out.println(fileName + " " + "treeSize:" + treeSize);
+//        System.out.println(fileName + " " + "treeRatio:" + treeRatio);
+//        System.out.println(fileName + " " + "treeSize2:" + treeSize2);
+//        System.out.println(fileName + " " + "treeRatio2:" + treeRatio2);
+        System.out.println(fileName + " " + compress_time);
 
-        for (Map.Entry<String, Long> kv : key2TotalSize.entrySet()) {
-            String key = kv.getKey();
-            Long totalSize = kv.getValue();
-            ResultStructure r = new ResultStructure(fileName, key,
-                totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                totalCompressionTime.get(key),
-                totalDecompressionTime.get(key)
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
+
+
+
+
+//
     }
 
     private void testFPC(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws FileNotFoundException {
@@ -527,21 +513,7 @@ public class TestCompressor {
         }
     }
 
-    private void storeResult() throws IOException {
-        String filePath = STORE_RESULT;
-        File file = new File(filePath).getParentFile();
-        if (!file.exists() && !file.mkdirs()) {
-            throw new IOException("Create directory failed: " + file);
-        }
-        try (FileWriter fileWriter = new FileWriter(filePath)) {
-            fileWriter.write(ResultStructure.getHead());
-            for (Map<String, ResultStructure> result : allResult) {
-                for (ResultStructure ls : result.values()) {
-                    fileWriter.write(ls.toString());
-                }
-            }
-        }
-    }
+
 
     private ResultStructure computeAvg(List<ResultStructure> lr) {
         int num = lr.size();

@@ -34,8 +34,8 @@ public class TestCamel {
     private static final String FILE_PATH = "src/test/resources/ElfTestData";
 
     private static final String[] FILENAMES = {
-            "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
-            "/City-temp.csv",
+//            "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
+            "/City-temp.csv", //
             "/IR-bio-temp.csv",
             "/Wind-Speed.csv",
             "/PM10-dust.csv",
@@ -49,7 +49,7 @@ public class TestCamel {
             "/Bitcoin-price.csv",
             "/Bird-migration.csv",
             "/Air-sensor.csv",
-
+////
             "/Food-price.csv",
             "/electric_vehicle_charging.csv",
             "/Blockchain-tr.csv",
@@ -58,6 +58,12 @@ public class TestCamel {
             "/City-lon.csv",
             "/POI-lat.csv",
             "/POI-lon.csv",
+
+            "/Cpu-usage.csv",
+            "/Disk-usage.csv",
+            "/Mem-usage.csv",
+
+
 
     };
     private static final String STORE_RESULT = "src/test/resources/result/result_camel.csv";
@@ -69,447 +75,84 @@ public class TestCamel {
     public void testCompressor() throws IOException {
         for (String filename : FILENAMES) {
             Map<String, List<ResultStructure>> result = new HashMap<>();
-            testELFCompressor(filename, result);
+            testCamelCompressor(filename, result);
+            for (Map.Entry<String, List<ResultStructure>> kv : result.entrySet()) {
+                Map<String, ResultStructure> r = new HashMap<>();
+                r.put(kv.getKey(), computeAvg(kv.getValue()));
+                allResult.add(r);
+            }
+            if (result.isEmpty()) {
+                System.out.println("The result of the file " + filename +
+                        " is empty because the amount of data is less than one block, and the default is at least 1000.");
+            }
         }
+        storeResult();
     }
 
 
-    private void testELFCompressor(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws FileNotFoundException {
+    private void testCamelCompressor(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws FileNotFoundException {
         FileReader fileReader = new FileReader(FILE_PATH + fileName);
 
         float totalBlocks = 0;
         double[] values;
-        long treeSize2 = 0l;
-        long treeSize = 0l;
-        long size = 0l;
-        double time = 0;
+        HashMap<String, List<Double>> totalCompressionTime = new HashMap<>();
+        HashMap<String, List<Double>> totalDecompressionTime = new HashMap<>();
+        HashMap<String, Long> key2TotalSize = new HashMap<>();
         while ((values = fileReader.nextBlock()) != null) {
             totalBlocks += 1;
-//            System.out.println(totalBlocks);
 
             ICompressor[] compressors = new ICompressor[]{
                 new CamelCompressor(),
             };
             for (int i = 0; i < compressors.length; i++) {
-                double encodingDuration;
-                double decodingDuration;
-                long start = System.nanoTime();
+                double encodingDuration = 0;
+                double decodingDuration = 0;
                 ICompressor compressor = compressors[i];
+                long start = System.nanoTime();
                 for (double value : values) {
                     compressor.addValue(value);
                 }
-
                 compressor.close();
                 encodingDuration = System.nanoTime() - start;
-                BPlusTree bPlusTree = compressor.getbPlusTree();
-                BPlusTree2 bPlusTree2 = compressor.getbPlusTre2();
-                BPlusDecimalTree bPlusDecimalTree = compressor.getbPlusDecimalTree();
-                long intTreeSize = bPlusTree.levelOrderTraversal(bPlusTree);
-                long intTreeSize2 = bPlusTree2.levelOrderTraversal(bPlusTree2);
-                long decimalSize2 = bPlusDecimalTree.levelOrderTraversal(bPlusDecimalTree);
-                treeSize = treeSize + intTreeSize;
-                treeSize2 = treeSize2 + intTreeSize2 + decimalSize2;
-                size = size + compressor.getSize();
-                time += encodingDuration / TIME_PRECISION;
-//                byte[] result = compressor.getBytes();
-//                IDecompressor[] decompressors = new IDecompressor[]{
-//                        new CamelDecompressorOS(result),
-//                };
-//                IDecompressor decompressor = decompressors[i];
-//                start = System.nanoTime();
-//                List<Double> uncompressedValues = decompressor.decompress();
-//                decodingDuration = System.nanoTime() - start;
-//
-//                for (int j = 0; j < values.length; j++) {
-//                    assertEquals(values[j], uncompressedValues.get(j), "Value did not match" + compressor.getKey());
-//                }
+                byte[] result = compressor.getBytes();
+                IDecompressor[] decompressors = new IDecompressor[]{
+                        new CamelDecompressorOS(result),
+                };
+                IDecompressor decompressor = decompressors[i];
+                long decode_start = System.nanoTime();
+                List<Double> uncompressedValues = decompressor.decompress();
+                decodingDuration = System.nanoTime() - decode_start;
+
+                String key = compressor.getKey();
+                if (!totalCompressionTime.containsKey(key)) {
+                    totalCompressionTime.put(key, new ArrayList<>());
+                    totalDecompressionTime.put(key, new ArrayList<>());
+                    key2TotalSize.put(key, 0L);
+                }
+                totalCompressionTime.get(key).add(encodingDuration / TIME_PRECISION);
+                totalDecompressionTime.get(key).add(decodingDuration / TIME_PRECISION);
+                key2TotalSize.put(key, compressor.getSize() + key2TotalSize.get(key));
+
             }
         }
-        double ratio = size / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
-        double treeRatio = (double) treeSize / size;
-        double treeRatio2 = (double) treeSize2 / size;
-        long compress_time = (long) (time / TIME_PRECISION);
-        System.out.println(fileName+ " " + "sourceSize:" + totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0);
-        System.out.println(fileName + " " + "compressSize:" + size);
-        System.out.println(fileName + " " + "compressRatio:" + ratio);
-        System.out.println(fileName + " " + "treeSize:" + treeSize);
-        System.out.println(fileName + " " + "treeRatio:" + treeRatio);
-        System.out.println(fileName + " " + "treeSize2:" + treeSize2);
-        System.out.println(fileName + " " + "treeRatio2:" + treeRatio2);
-        System.out.println(fileName + " " + compress_time);
 
-
-
+        for (Map.Entry<String, Long> kv : key2TotalSize.entrySet()) {
+            String key = kv.getKey();
+            Long totalSize = kv.getValue();
+            ResultStructure r = new ResultStructure(fileName, key,
+                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
+                    totalCompressionTime.get(key),
+                    totalDecompressionTime.get(key)
+            );
+            if (!resultCompressor.containsKey(key)) {
+                resultCompressor.put(key, new ArrayList<>());
+            }
+            resultCompressor.get(key).add(r);
+        }
 
 
 //
     }
-
-    private void testFPC(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws FileNotFoundException {
-        FileReader fileReader = new FileReader(FILE_PATH + fileName);
-        float totalBlocks = 0;
-        long totalSize = 0;
-        double[] values;
-        List<Double> totalCompressionTime = new ArrayList<>();
-        List<Double> totalDecompressionTime = new ArrayList<>();
-
-        while ((values = fileReader.nextBlock()) != null) {
-            double encodingDuration = 0;
-            double decodingDuration = 0;
-            FpcCompressor fpc = new FpcCompressor();
-
-            ByteBuffer buffer = ByteBuffer.allocate(FileReader.DEFAULT_BLOCK_SIZE * 10);
-            // Compress
-            long start = System.nanoTime();
-            fpc.compress(buffer, values);
-            encodingDuration += System.nanoTime() - start;
-
-            totalSize += buffer.position() * 8L;
-            totalBlocks += 1;
-
-            buffer.flip();
-
-            FpcCompressor decompressor = new FpcCompressor();
-
-            double[] dest = new double[FileReader.DEFAULT_BLOCK_SIZE];
-            start = System.nanoTime();
-            decompressor.decompress(buffer, dest);
-            decodingDuration += System.nanoTime() - start;
-            assertArrayEquals(dest, values);
-            totalCompressionTime.add(encodingDuration / TIME_PRECISION);
-            totalDecompressionTime.add(decodingDuration / TIME_PRECISION);
-        }
-        if (!totalCompressionTime.isEmpty()) {
-            String key = "FPC";
-            ResultStructure r = new ResultStructure(fileName, key,
-                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                    totalCompressionTime,
-                    totalDecompressionTime
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
-    }
-
-    private void testSnappy(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws IOException {
-        FileReader fileReader = new FileReader(FILE_PATH + fileName);
-        float totalBlocks = 0;
-        long totalSize = 0;
-        double[] values;
-        List<Double> totalCompressionTime = new ArrayList<>();
-        List<Double> totalDecompressionTime = new ArrayList<>();
-
-        while ((values = fileReader.nextBlock()) != null) {
-            double encodingDuration = 0;
-            double decodingDuration = 0;
-
-            Configuration conf = HBaseConfiguration.create();
-            // ZStandard levels range from 1 to 22.
-            // Level 22 might take up to a minute to complete. 3 is the Hadoop default, and will be fast.
-            conf.setInt(CommonConfigurationKeys.IO_COMPRESSION_CODEC_ZSTD_LEVEL_KEY, 3);
-            SnappyCodec codec = new SnappyCodec();
-            codec.setConf(conf);
-
-            ByteBuffer bb = ByteBuffer.allocate(values.length * 8);
-            // Compress
-            long start = System.nanoTime();
-            for (double d : values) {
-                bb.putDouble(d);
-            }
-            byte[] input = bb.array();
-            org.apache.hadoop.io.compress.Compressor compressor = codec.createCompressor();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            CompressionOutputStream out = codec.createOutputStream(baos, compressor);
-            out.write(input);
-            out.close();
-            encodingDuration += System.nanoTime() - start;
-            final byte[] compressed = baos.toByteArray();
-            totalSize += compressed.length * 8L;
-            totalBlocks++;
-
-            final byte[] plain = new byte[input.length];
-            org.apache.hadoop.io.compress.Decompressor decompressor = codec.createDecompressor();
-            start = System.nanoTime();
-            CompressionInputStream in = codec.createInputStream(new ByteArrayInputStream(compressed), decompressor);
-            IOUtils.readFully(in, plain, 0, plain.length);
-            in.close();
-            double[] uncompressed = toDoubleArray(plain);
-            decodingDuration += System.nanoTime() - start;
-            // Decompressed bytes should equal the original
-            for (int i = 0; i < values.length; i++) {
-                assertEquals(values[i], uncompressed[i], "Value did not match");
-            }
-            totalCompressionTime.add(encodingDuration / TIME_PRECISION);
-            totalDecompressionTime.add(decodingDuration / TIME_PRECISION);
-        }
-        if (!totalCompressionTime.isEmpty()) {
-            String key = "Snappy";
-            ResultStructure r = new ResultStructure(fileName, key,
-                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                    totalCompressionTime,
-                    totalDecompressionTime
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
-    }
-
-    private void testZstd(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws IOException {
-        FileReader fileReader = new FileReader(FILE_PATH + fileName);
-        float totalBlocks = 0;
-        long totalSize = 0;
-        double[] values;
-        List<Double> totalCompressionTime = new ArrayList<>();
-        List<Double> totalDecompressionTime = new ArrayList<>();
-
-        while ((values = fileReader.nextBlock()) != null) {
-            double encodingDuration = 0;
-            double decodingDuration = 0;
-
-            Configuration conf = HBaseConfiguration.create();
-            // ZStandard levels range from 1 to 22.
-            // Level 22 might take up to a minute to complete. 3 is the Hadoop default, and will be fast.
-            conf.setInt(CommonConfigurationKeys.IO_COMPRESSION_CODEC_ZSTD_LEVEL_KEY, 3);
-            ZstdCodec codec = new ZstdCodec();
-            codec.setConf(conf);
-
-            ByteBuffer bb = ByteBuffer.allocate(values.length * 8);
-            // Compress
-            long start = System.nanoTime();
-            for (double d : values) {
-                bb.putDouble(d);
-            }
-            byte[] input = bb.array();
-            org.apache.hadoop.io.compress.Compressor compressor = codec.createCompressor();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            CompressionOutputStream out = codec.createOutputStream(baos, compressor);
-            out.write(input);
-            out.close();
-            encodingDuration += System.nanoTime() - start;
-            final byte[] compressed = baos.toByteArray();
-            totalSize += compressed.length * 8L;
-            totalBlocks++;
-
-            final byte[] plain = new byte[input.length];
-            org.apache.hadoop.io.compress.Decompressor decompressor = codec.createDecompressor();
-            start = System.nanoTime();
-            CompressionInputStream in = codec.createInputStream(new ByteArrayInputStream(compressed), decompressor);
-            IOUtils.readFully(in, plain, 0, plain.length);
-            in.close();
-            double[] uncompressed = toDoubleArray(plain);
-            decodingDuration += System.nanoTime() - start;
-            // Decompressed bytes should equal the original
-            for (int i = 0; i < values.length; i++) {
-                assertEquals(values[i], uncompressed[i], "Value did not match");
-            }
-            totalCompressionTime.add(encodingDuration / TIME_PRECISION);
-            totalDecompressionTime.add(decodingDuration / TIME_PRECISION);
-        }
-        if (!totalCompressionTime.isEmpty()) {
-            String key = "Zstd";
-            ResultStructure r = new ResultStructure(fileName, key,
-                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                    totalCompressionTime,
-                    totalDecompressionTime
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
-    }
-
-    private void testLZ4(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws IOException {
-        FileReader fileReader = new FileReader(FILE_PATH + fileName);
-        float totalBlocks = 0;
-        long totalSize = 0;
-        double[] values;
-        List<Double> totalCompressionTime = new ArrayList<>();
-        List<Double> totalDecompressionTime = new ArrayList<>();
-
-        while ((values = fileReader.nextBlock()) != null) {
-            double encodingDuration = 0;
-            double decodingDuration = 0;
-
-            Lz4Codec codec = new Lz4Codec();
-
-            ByteBuffer bb = ByteBuffer.allocate(values.length * 8);
-            // Compress
-            long start = System.nanoTime();
-            for (double d : values) {
-                bb.putDouble(d);
-            }
-            byte[] input = bb.array();
-            org.apache.hadoop.io.compress.Compressor compressor = codec.createCompressor();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            CompressionOutputStream out = codec.createOutputStream(baos, compressor);
-            out.write(input);
-            out.close();
-            encodingDuration += System.nanoTime() - start;
-            final byte[] compressed = baos.toByteArray();
-            totalSize += compressed.length * 8L;
-            totalBlocks++;
-
-            final byte[] plain = new byte[input.length];
-            org.apache.hadoop.io.compress.Decompressor decompressor = codec.createDecompressor();
-            start = System.nanoTime();
-            CompressionInputStream in = codec.createInputStream(new ByteArrayInputStream(compressed), decompressor);
-            IOUtils.readFully(in, plain, 0, plain.length);
-            in.close();
-            double[] uncompressed = toDoubleArray(plain);
-            decodingDuration += System.nanoTime() - start;
-            // Decompressed bytes should equal the original
-            for (int i = 0; i < values.length; i++) {
-                assertEquals(values[i], uncompressed[i], "Value did not match");
-            }
-            totalCompressionTime.add(encodingDuration / TIME_PRECISION);
-            totalDecompressionTime.add(decodingDuration / TIME_PRECISION);
-        }
-        if (!totalCompressionTime.isEmpty()) {
-            String key = "LZ4";
-            ResultStructure r = new ResultStructure(fileName, key,
-                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                    totalCompressionTime,
-                    totalDecompressionTime
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
-    }
-
-    private void testBrotli(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws IOException {
-        FileReader fileReader = new FileReader(FILE_PATH + fileName);
-        float totalBlocks = 0;
-        long totalSize = 0;
-        double[] values;
-        List<Double> totalCompressionTime = new ArrayList<>();
-        List<Double> totalDecompressionTime = new ArrayList<>();
-
-        while ((values = fileReader.nextBlock()) != null) {
-            double encodingDuration = 0;
-            double decodingDuration = 0;
-
-            BrotliCodec codec = new BrotliCodec();
-
-            ByteBuffer bb = ByteBuffer.allocate(values.length * 8);
-            // Compress
-            long start = System.nanoTime();
-            for (double d : values) {
-                bb.putDouble(d);
-            }
-            byte[] input = bb.array();
-            org.apache.hadoop.io.compress.Compressor compressor = codec.createCompressor();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            CompressionOutputStream out = codec.createOutputStream(baos, compressor);
-            out.write(input);
-            out.close();
-            encodingDuration += System.nanoTime() - start;
-            final byte[] compressed = baos.toByteArray();
-            totalSize += compressed.length * 8L;
-            totalBlocks++;
-
-            final byte[] plain = new byte[input.length];
-            org.apache.hadoop.io.compress.Decompressor decompressor = codec.createDecompressor();
-            start = System.nanoTime();
-            CompressionInputStream in = codec.createInputStream(new ByteArrayInputStream(compressed), decompressor);
-            IOUtils.readFully(in, plain, 0, plain.length);
-            in.close();
-            double[] uncompressed = toDoubleArray(plain);
-            decodingDuration += System.nanoTime() - start;
-            // Decompressed bytes should equal the original
-            for (int i = 0; i < values.length; i++) {
-                assertEquals(values[i], uncompressed[i], "Value did not match");
-            }
-            totalCompressionTime.add(encodingDuration / TIME_PRECISION);
-            totalDecompressionTime.add(decodingDuration / TIME_PRECISION);
-        }
-        if (!totalCompressionTime.isEmpty()) {
-            String key = "Brotli";
-            ResultStructure r = new ResultStructure(fileName, key,
-                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                    totalCompressionTime,
-                    totalDecompressionTime
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
-    }
-
-    private void testXz(String fileName, Map<String, List<ResultStructure>> resultCompressor) throws IOException {
-        FileReader fileReader = new FileReader(FILE_PATH + fileName);
-        float totalBlocks = 0;
-        long totalSize = 0;
-        double[] values;
-        List<Double> totalCompressionTime = new ArrayList<>();
-        List<Double> totalDecompressionTime = new ArrayList<>();
-
-        while ((values = fileReader.nextBlock()) != null) {
-            double encodingDuration = 0;
-            double decodingDuration = 0;
-
-            Configuration conf = new Configuration();
-            // LZMA levels range from 1 to 9.
-            // Level 9 might take several minutes to complete. 3 is our default. 1 will be fast.
-            conf.setInt(LzmaCodec.LZMA_LEVEL_KEY, 3);
-            LzmaCodec codec = new LzmaCodec();
-            codec.setConf(conf);
-
-            ByteBuffer bb = ByteBuffer.allocate(values.length * 8);
-            // Compress
-            long start = System.nanoTime();
-            for (double d : values) {
-                bb.putDouble(d);
-            }
-            byte[] input = bb.array();
-            org.apache.hadoop.io.compress.Compressor compressor = codec.createCompressor();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            CompressionOutputStream out = codec.createOutputStream(baos, compressor);
-            out.write(input);
-            out.close();
-            encodingDuration += System.nanoTime() - start;
-            final byte[] compressed = baos.toByteArray();
-            totalSize += compressed.length * 8L;
-            totalBlocks++;
-
-            final byte[] plain = new byte[input.length];
-            org.apache.hadoop.io.compress.Decompressor decompressor = codec.createDecompressor();
-            start = System.nanoTime();
-            CompressionInputStream in = codec.createInputStream(new ByteArrayInputStream(compressed), decompressor);
-            IOUtils.readFully(in, plain, 0, plain.length);
-            in.close();
-            double[] uncompressed = toDoubleArray(plain);
-            decodingDuration += System.nanoTime() - start;
-            // Decompressed bytes should equal the original
-            for (int i = 0; i < values.length; i++) {
-                assertEquals(values[i], uncompressed[i], "Value did not match");
-            }
-            totalCompressionTime.add(encodingDuration / TIME_PRECISION);
-            totalDecompressionTime.add(decodingDuration / TIME_PRECISION);
-        }
-        if (!totalCompressionTime.isEmpty()) {
-            String key = "Xz";
-            ResultStructure r = new ResultStructure(fileName, key,
-                    totalSize / (totalBlocks * FileReader.DEFAULT_BLOCK_SIZE * 64.0),
-                    totalCompressionTime,
-                    totalDecompressionTime
-            );
-            if (!resultCompressor.containsKey(key)) {
-                resultCompressor.put(key, new ArrayList<>());
-            }
-            resultCompressor.get(key).add(r);
-        }
-    }
-
-
-
     private ResultStructure computeAvg(List<ResultStructure> lr) {
         int num = lr.size();
         double compressionTime = 0;
@@ -551,5 +194,20 @@ public class TestCamel {
             doubles[i] = ByteBuffer.wrap(byteArray, i * times, times).getDouble();
         }
         return doubles;
+    }
+    private void storeResult() throws IOException {
+        String filePath = STORE_RESULT;
+        File file = new File(filePath).getParentFile();
+        if (!file.exists() && !file.mkdirs()) {
+            throw new IOException("Create directory failed: " + file);
+        }
+        try (FileWriter fileWriter = new FileWriter(filePath)) {
+            fileWriter.write(ResultStructure.getHead());
+            for (Map<String, ResultStructure> result : allResult) {
+                for (ResultStructure ls : result.values()) {
+                    fileWriter.write(ls.toString());
+                }
+            }
+        }
     }
 }

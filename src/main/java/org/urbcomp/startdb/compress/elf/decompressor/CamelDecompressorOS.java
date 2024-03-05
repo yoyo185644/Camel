@@ -11,6 +11,7 @@ public class CamelDecompressorOS implements IDecompressor{
     public CamelDecompressorOS (byte[] bytes) {
         camelDecompressor =  new CamelDecompressor(bytes);
     }
+
     @Override
     public List<Double> decompress() {
         return camelDecompressor.getValues();

@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 整数部分的case study实验
+ */
 public class CaseStudy02 {
     private static final String FILE_PATH = "src/test/resources/ElfTestData";
 
@@ -69,18 +72,80 @@ public class CaseStudy02 {
         return diffInterNumMap;
     }
 
-    public static void main(String[] args) throws IOException {
+    // 计算与前一个值的差值
+    public static Map<Integer, Integer> calculateDifferences(String fileName, Map<Integer, Integer> differencesMap) throws IOException {
+        Map<Integer, Integer> map = new HashMap<>();
 
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH + fileName))) {
+            String line;
+            int previousValue = 0;
+
+            while ((line = reader.readLine()) != null) {
+                int currentValue = 0;
+                if ("\"\"".equals(line) || line.isEmpty()){
+                   currentValue = previousValue;
+                } else {
+                   currentValue = (int)Double.parseDouble(line);
+                }
+
+                int difference = Math.abs(currentValue - previousValue);
+
+                // 更新差值在Map中的数量
+                differencesMap.put(difference, differencesMap.getOrDefault(difference, 0) + 1);
+                // 更新差值在Map中的数量
+                map.put(difference, differencesMap.getOrDefault(difference, 0) + 1);
+
+                // 更新前一个值
+                previousValue = currentValue;}
+
+        }
+        System.out.println(fileName + map);
+
+        return differencesMap;
+    }
+
+
+
+    public static void main(String[] args) throws IOException {
+        Map<Integer, Integer> differencesMap =  new HashMap<>();
         for (String fileName : FILENAMES) {
-            System.out.println("fileName:" + fileName);
-            Map<Integer, Integer> diffInterNumMap = getDiffInterNum(fileName);
-            // 使用entrySet()方法遍历Map
-            for (Map.Entry<Integer, Integer> entry : diffInterNumMap.entrySet()) {
-                int key = entry.getKey();
-                int value = entry.getValue();
-                System.out.println("int_val: " + key + ", num: " + value);
+//            System.out.println("fileName:" + fileName);
+//            Map<Integer, Integer> diffInterNumMap = getDiffInterNum(fileName);
+//            // 使用entrySet()方法遍历Map
+//            for (Map.Entry<Integer, Integer> entry : diffInterNumMap.entrySet()) {
+//                int key = entry.getKey();
+//                int value = entry.getValue();
+//                System.out.println("int_val: " + key + ", num: " + value);
+//            }
+
+            try {
+                differencesMap = calculateDifferences(fileName, differencesMap);
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+        System.out.println("Differences Map: " + differencesMap);
 
+        int totalValues = 0;
+        int tempValue = 0;
+        for (int value : differencesMap.values()) {
+            totalValues += value;
+        }
+        System.out.println("Total Values: " + totalValues);
+        double percentages = 0;
+        // 计算每一个key对应value的占比
+        for (Map.Entry<Integer, Integer> entry : differencesMap.entrySet()) {
+            int key = entry.getKey();
+            int value = entry.getValue();
+            double percentage = (double) value / totalValues * 100;
+            percentages += percentage;
+//            System.out.println("Key: " + key + ", Value: " + value + ", Percentage: " + percentage + "%");
+            if (key>=100 ) {
+                tempValue += value;
+            }
+        }
+//        System.out.println(percentages);
+//        System.out.println("tempRatio:" + tempValue + ":" + (double) tempValue / totalValues * 100);
     }
 }
