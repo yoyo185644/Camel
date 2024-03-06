@@ -1,9 +1,6 @@
 package org.urbcomp.startdb.compress.elf.compressor;
 
-import yyy.ts.compress.camel.BPlusDecimalTree;
-import yyy.ts.compress.camel.BPlusTree;
-import yyy.ts.compress.camel.BPlusTree2;
-import yyy.ts.compress.camel.Camel;
+import yyy.ts.compress.camel.*;
 
 public class CamelCompressor implements ICompressor{
     private final Camel camel;

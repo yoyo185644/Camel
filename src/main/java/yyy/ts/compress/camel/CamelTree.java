@@ -101,14 +101,15 @@ public class CamelTree {
     private int compressValue(long value_bits) {
         double value = Double.longBitsToDouble(value_bits);
         // 压缩整数位
-        size = compressIntegerValue((int)value);
+//        size = compressIntegerValue((int)value);
 
         // 压缩小数位 默认小数位是1.**
         BigDecimal big_value = BigDecimal.valueOf(value);
 
         BigDecimal decimal_value = big_value.subtract(BigDecimal.valueOf(big_value.intValue()));
 
-        size = compressDecimalValue(decimal_value);
+        size = compressDecimalValue(BigDecimal.valueOf(Math.abs(decimal_value.doubleValue())));
+        System.out.println(value + ": " + size);
 
 //        if (TreeFlag) {
 //            TreeFlag = false;

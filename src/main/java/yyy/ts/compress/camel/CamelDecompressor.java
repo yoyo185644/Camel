@@ -19,7 +19,7 @@ public class CamelDecompressor {
     private boolean endOfStream = false;
 
     private static final int DEFAULT_BLOCK_SIZE = 1000;
-
+    private static final long[] powers = {10L, 100L, 1000L, 10000L};
     private long readNum = 0;
 
     // 1位小数对应的centerbits与前导数0的关系
@@ -97,12 +97,8 @@ public class CamelDecompressor {
     private long readInt() throws IOException {
         int integerNum = in.readInt(2);
         long diffVal;
-        if (integerNum == 0) {
-            diffVal = 0;
-        } else if (integerNum == 1) {
-            diffVal = 1;
-        } else if (integerNum == 2) {
-            diffVal = -1;
+        if (integerNum < 3) {
+            diffVal = integerNum-1;
         } else {
             // 读取差值的符号 0表示负数 1表示正数
             int diffSymbol = in.readBit();
@@ -124,49 +120,48 @@ public class CamelDecompressor {
     private double readDecimal() throws IOException {
         // 读取小数位数
         int decimal_count = in.readInt(2) + 1;
-        if (decimal_count == 0)
-            return 0.0;
         // 是否计算m的值
         int isM = in.readInt(1);
-        long xor, xorCount, leadingZeroSNum;
+        long xor;
         double decimalVal, m;
-        String xorString = "";
+        long xorString = 0;
         if (isM == 1) {
             // 查找保存的xor值
             xor = in.readInt(decimal_count);
             // 根据leadingZeroSNum和XOR拼接xorVal
             long shiftedValue = xor << (52 - decimal_count);
-            xorString = String.format("%64s", Long.toBinaryString(shiftedValue)).replace(' ', '0');
+            xorString = shiftedValue;
+//            xorString = String.format("%64s", Long.toBinaryString(shiftedValue)).replace(' ', '0');
         }
-                // 将m用二进制数表示
+        // 将m用二进制数表示
         int m_int = 0;
         if (decimal_count <= 1) { // 如果是1 直接往后读decimal_count+1位
             m_int = in.readInt(decimal_count+1);
         } else if (decimal_count ==2) {
-            int tmep = in.readInt(1);
-            if ( tmep == 0) {
+            int temp = in.readInt(1);
+            if ( temp == 0) {
                 m_int = in.readInt(3);
             }  else {
                 m_int = in.readInt(5);
             }
         } else if (decimal_count == 3) {
-            int tmep = in.readInt(2);
-            if ( tmep == 0) {
+            int temp = in.readInt(2);
+            if ( temp == 0) {
                 m_int = in.readInt(1);
-            }  else if (tmep == 1) {
+            }  else if (temp == 1) {
                 m_int = in.readInt(3);
-            } else if (tmep == 2) {
+            } else if (temp == 2) {
                 m_int = in.readInt(5);
             } else {
                 m_int = in.readInt(mValueBits[decimal_count-1]);
             }
         } else {
-            int tmep = in.readInt(2);
-            if (tmep == 0) {
+            int temp = in.readInt(2);
+            if (temp == 0) {
                 m_int = in.readInt(4);
-            } else if (tmep == 1) {
+            } else if (temp == 1) {
                 m_int = in.readInt(6);
-            } else if (tmep == 2) {
+            } else if (temp == 2) {
                 m_int = in.readInt(8);
             } else {
                 m_int = in.readInt(mValueBits[decimal_count - 1]);
@@ -174,17 +169,14 @@ public class CamelDecompressor {
 
         }
 
-
         if (isM == 1){
-            m = m_int/Math.pow(10, decimal_count) + 1;
+            m = (double) m_int / powers[decimal_count-1] + 1;
             long m_prime = Double.doubleToLongBits(m);
-            String mString = Long.toBinaryString(m_prime);
-            String res = xorBinaryStrings(xorString, mString);
-            long decimalLong = Long.parseLong(res, 2);
+            long decimalLong = xorString ^ m_prime;;
             // 使用 Double.longBitsToDouble 将 long 转换为 double
             decimalVal = Double.longBitsToDouble(decimalLong) - 1;
         } else {
-           m = m_int /Math.pow(10, decimal_count);
+           m = (double) m_int / powers[decimal_count-1];
            decimalVal = m;
         }
 
