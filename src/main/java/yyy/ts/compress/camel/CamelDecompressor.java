@@ -130,8 +130,11 @@ public class CamelDecompressor {
             xor = in.readInt(decimal_count);
             // 根据leadingZeroSNum和XOR拼接xorVal
             long shiftedValue = xor << (52 - decimal_count);
-            xorString = shiftedValue;
+//            xorString = shiftedValue;
 //            xorString = String.format("%64s", Long.toBinaryString(shiftedValue)).replace(' ', '0');
+            for (int i = 0; i < 64; i++) {
+                xorString ^= (shiftedValue & (1L << i)); // 使用异或操作符直接计算xorValue
+            }
         }
         // 将m用二进制数表示
         int m_int = 0;

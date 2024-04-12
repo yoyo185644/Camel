@@ -35,33 +35,34 @@ public class TestCamel {
 
     private static final String[] FILENAMES = {
 //            "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
-            "/City-temp.csv", //
-            "/IR-bio-temp.csv",
-            "/Wind-Speed.csv",
-            "/PM10-dust.csv",
-            "/Stocks-UK.csv",
-            "/Stocks-USA.csv",
-            "/Stocks-DE.csv",
-            "/Dew-point-temp.csv",
-            "/Air-pressure.csv",
+//            "/City-temp.csv", //
+//            "/IR-bio-temp.csv",
+//            "/Wind-Speed.csv",
+//            "/PM10-dust.csv",
+//            "/Stocks-UK.csv",
+//            "/Stocks-USA.csv",
+//            "/Stocks-DE.csv",
+//            "/Dew-point-temp.csv"
+//            "/Bitcoin-price.csv",
+//            "/Air-pressure.csv",
             "/Basel-wind.csv",
             "/Basel-temp.csv",
-            "/Bitcoin-price.csv",
-            "/Bird-migration.csv",
+
+//            "/Bird-migration.csv",
             "/Air-sensor.csv",
 ////
-            "/Food-price.csv",
-            "/electric_vehicle_charging.csv",
-            "/Blockchain-tr.csv",
-            "/SSD-bench.csv",
-            "/City-lat.csv",
-            "/City-lon.csv",
+//            "/Food-price.csv",
+//            "/electric_vehicle_charging.csv",
+//            "/Blockchain-tr.csv",
+//            "/SSD-bench.csv",
+//            "/City-lat.csv",
+//            "/City-lon.csv",
             "/POI-lat.csv",
-            "/POI-lon.csv",
+//            "/POI-lon.csv",
 
             "/Cpu-usage.csv",
             "/Disk-usage.csv",
-            "/Mem-usage.csv",
+//            "/Mem-usage.csv",
 
 
 

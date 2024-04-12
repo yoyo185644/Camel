@@ -42,25 +42,14 @@ class DecimalNode{
     }
 }
 
-class TSNode {
-    byte[] valueInt;
-    byte[] valueDecimal;
-    long timeStamp;
-    TSNode nextTS;
-    TSNode beforeTS;
-
-    public TSNode(byte[] valueInt, byte[] valueDecimal,  long timeStamp) {
-        this.valueInt = valueInt;
-        this.valueDecimal = valueDecimal;
-        this.timeStamp = timeStamp;
-        this.nextTS = null;
-    }
-}
-
 class KeyNode{
     byte[] key;
     FlagFalseNode flagFalseNode;
     FlagTrueNode flagTrueNode;
+
+    KeyNode prev;
+    KeyNode next;
+
 
     public KeyNode(byte[] key, FlagTrueNode flagTrueNode, FlagFalseNode flagFalseNode) {
         this.key = key;
@@ -90,6 +79,8 @@ public class BPlusDecimalTree {
     private static boolean buildFlag = false;
 
     private static TSNode previousTSNode = null;
+
+
 
     // 按照寻找到的m的值进行保存
 
@@ -194,6 +185,14 @@ public class BPlusDecimalTree {
             }
             KeyNode keyNode = new KeyNode(compressDecimal, null, null);
             node.keys.add(i + 1, keyNode);
+            // 更新叶子节点的双向链表
+            if (i + 2 < node.keys.size()) {
+                node.keys.get(i + 1).next = node.keys.get(i + 2);
+            }
+            if (i >= 0) {
+                node.keys.get(i + 1).prev = node.keys.get(i);
+                node.keys.get(i).next = node.keys.get(i + 1); // 更新前一个节点的 next 指针
+            }
         } else {
             while (i >= 0 && decompressDecimal(compressDecimal) < decompressDecimal(node.keys.get(i).key)) {
                 i--;
@@ -260,7 +259,7 @@ public class BPlusDecimalTree {
     public BPlusDecimalTree buildTree(BPlusDecimalTree bPlusTree,  byte[] decimalCount, byte[] xorFlag, byte[] xorVal) {
         int[] range = new int[]{0, 5, 25, 125, 625};
         int decimal_Count = binaryToInt(decimalCount);
-        for (int key = 1; key < range[decimal_Count]; key ++) {
+        for (int key = 0; key < range[decimal_Count]; key ++) {
             // todo 参数compressDecimal修改成 compressInt
             bPlusTree.insert(xorFlag, xorVal, null, compressDecimal(decimal_Count, key), 1);
         }
@@ -372,19 +371,22 @@ public class BPlusDecimalTree {
             BPlusDecimalTreeNode current = queue.poll();
             int keySize  = current.keys.size();
             for (int i =0; i < keySize; i++) {
-                if (current.keys.get(i).flagFalseNode!=null) {
-                  res.addAll(current.keys.get(i).flagFalseNode.tsNodeList);
-                }
-                if (current.keys.get(i).flagTrueNode!=null) {
-                    for (int j = 0; j< current.keys.get(i).flagTrueNode.decimalNodes.size(); j++) {
-                        res.addAll(current.keys.get(i).flagTrueNode.decimalNodes.get(j).tsNodeList);
+                if (current.isLeaf) {
+                    if (current.keys.get(i).flagFalseNode!=null) {
+                        res.addAll(current.keys.get(i).flagFalseNode.tsNodeList);
+                    }
+                    if (current.keys.get(i).flagTrueNode!=null) {
+                        for (int j = 0; j< current.keys.get(i).flagTrueNode.decimalNodes.size(); j++) {
+                            res.addAll(current.keys.get(i).flagTrueNode.decimalNodes.get(j).tsNodeList);
+                        }
                     }
                 }
+
             }
 
             if (current.children != null) {
                 for (BPlusDecimalTreeNode child : current.children) {
-                    if (child != null && child.isLeaf) {
+                    if (child != null) {
                         queue.offer(child);
                     }
                 }

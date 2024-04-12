@@ -1,45 +1,25 @@
 package org.urbcomp.startdb.compress.elf.doubleprecision;
 
-import com.github.kutschkem.fpc.FpcCompressor;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeys;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.io.compress.brotli.BrotliCodec;
-import org.apache.hadoop.hbase.io.compress.lz4.Lz4Codec;
-import org.apache.hadoop.hbase.io.compress.xerial.SnappyCodec;
-import org.apache.hadoop.hbase.io.compress.xz.LzmaCodec;
-import org.apache.hadoop.hbase.io.compress.zstd.ZstdCodec;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.compress.CompressionInputStream;
-import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.junit.jupiter.api.Test;
 import org.urbcomp.startdb.compress.elf.compressor.CamelCompressor;
 import org.urbcomp.startdb.compress.elf.compressor.ICompressor;
-import org.urbcomp.startdb.compress.elf.decompressor.CamelDecompressorOS;
-import org.urbcomp.startdb.compress.elf.decompressor.IDecompressor;
 import yyy.ts.compress.camel.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class TestCamelTree {
+public class TestCamelTreeV2 {
     private static final String FILE_PATH = "src/test/resources/ElfTestData";
 
     private static final String[] FILENAMES = {
 //            "/init.csv",    //First run a dataset to ensure the relevant hbase settings of the zstd and snappy compressors
-            "/City-temp.csv", //
+//            "/City-temp.csv", //
 //            "/IR-bio-temp.csv",
-//            "/Wind-Speed.csv",
+            "/Wind-Speed.csv",
 //            "/PM10-dust.csv",
 //            "/Stocks-UK.csv",
 //            "/Stocks-USA.csv",
@@ -123,24 +103,26 @@ public class TestCamelTree {
                 time += encodingDuration / TIME_PRECISION;
 
                 // 查询
-//                ValueSearch vs = new ValueSearch();
-//                long search_time = System.nanoTime();
-//                List<TSNode> list = vs.searchValue(bPlusDecimalTree, bPlusTree2, 64.2);
+                ValueSearch vs = new ValueSearch();
+                long search_time = System.nanoTime();
+                List<TSNode> list = vs.searchValue(bPlusDecimalTree, bPlusTree2, 0.21);
 //                System.out.println("valueSearch:" + (System.nanoTime()-search_time)/1000.0);
-//
-//                RangeSearch rs = new RangeSearch();
-//                search_time = System.nanoTime();
-//                rs.searchRangeValue(bPlusTree, 66.7,  72.6);
+                System.out.print((System.nanoTime()-search_time)/1000.0 + ",");
+                RangeSearch rs = new RangeSearch();
+                search_time = System.nanoTime();
+                rs.searchRangeValue(bPlusTree, 0.21,  0.97);
 //                System.out.println("rangeSearch:" + (System.nanoTime()-search_time)/1000.0);
-//
-//                SegmentSearch ss = new SegmentSearch();
-//                search_time = System.nanoTime();
+                System.out.print((System.nanoTime()-search_time)/1000.0 + ",");
+
+                SegmentSearch ss = new SegmentSearch();
+                search_time = System.nanoTime();
 //                ss.searchSegment(bPlusTree);
-//                System.out.println("segmentSearch:" + (System.nanoTime()-search_time)/1000.0);
-//
-//                search_time = System.nanoTime();
-//                sl.search(4);
-//                System.out.println("timeSearch:" + (System.nanoTime()-search_time)/1000.0);
+                ss.searchSegmentDecimal(bPlusDecimalTree);
+                System.out.print((System.nanoTime()-search_time)/1000.0 + ",");
+
+                search_time = System.nanoTime();
+                sl.search(1260);
+                System.out.println((System.nanoTime()-search_time)/1000.0 + ",");
             }
 
 

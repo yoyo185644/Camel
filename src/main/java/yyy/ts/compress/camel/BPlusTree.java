@@ -39,7 +39,9 @@ public class BPlusTree {
     private int order;
 
     // 用一个指针永远指向下一个值
-    public static KeyNode previousTSNode = null;
+    public static KeyNode prev = null;
+
+    public static KeyNode next = null;
 
 
 
@@ -222,6 +224,36 @@ public class BPlusTree {
             }
         }
         return size;
+    }
+
+    public List<TSNode> levelOrderTraversalList(BPlusTree tree){
+        List<TSNode> TSNodes = new ArrayList<>();
+        if (tree == null) {
+            System.out.println("The tree is empty.");
+            return null;
+        }
+
+        Queue<BPlusTreeNode> queue = new LinkedList<>();
+        queue.offer(tree.root);
+
+        while (!queue.isEmpty()) {
+            BPlusTreeNode current = queue.poll();
+            int keySize  = current.keys.size();
+            for (int i =0; i < keySize; i++) {
+                if (current.isLeaf) {
+                    TSNodes.addAll(current.keys.get(i).bPlusDecimalTree.getAllLeaf(current.keys.get(i).bPlusDecimalTree)) ;
+                }
+            }
+
+            if (current.children != null) {
+                for (BPlusTreeNode child : current.children) {
+                    if (child != null) {
+                        queue.offer(child);
+                    }
+                }
+            }
+        }
+        return TSNodes;
     }
 
 

@@ -3,10 +3,10 @@ package org.urbcomp.startdb.compress.elf.compressor;
 import yyy.ts.compress.camel.*;
 
 public class CamelCompressor implements ICompressor{
-    private final Camel camel;
+    private final CamelTree camel;
 
     public CamelCompressor() {
-        this.camel = new Camel();
+        this.camel = new CamelTree();
     }
 
     @Override

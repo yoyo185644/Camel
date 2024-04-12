@@ -1,14 +1,16 @@
+package yyy.ts.compress.camel;
+
 import java.util.LinkedList;
 import java.util.Random;
 
 class SkiplistNode {
 
-    public int data;
+    public Double data;
     public SkiplistNode next;
     public SkiplistNode down;
     public int level;
 
-    public SkiplistNode(int data, int level) {
+    public SkiplistNode(Double data, int level) {
         this.data = data;
         this.level = level;
     }
@@ -35,15 +37,15 @@ public class SkipList {
         // 初始化跳表时，跳表的层数随机指定
         curLevel = getRandomLevel();
         // 指定了跳表的初始的随机层数后，就需要将每一层的头节点和尾节点创建出来并构建好关系
-        SkiplistNode head = new SkiplistNode(Integer.MIN_VALUE, 0);
-        SkiplistNode tail = new SkiplistNode(Integer.MAX_VALUE, 0);
+        SkiplistNode head = new SkiplistNode(Double.MIN_VALUE, 0);
+        SkiplistNode tail = new SkiplistNode(Double.MAX_VALUE, 0);
         for (int i = 0; i <= curLevel; i++) {
             head.next = tail;
             headNodes.addFirst(head);
             tailNodes.addFirst(tail);
 
-            SkiplistNode headNew = new SkiplistNode(Integer.MIN_VALUE, head.level + 1);
-            SkiplistNode tailNew = new SkiplistNode(Integer.MAX_VALUE, tail.level + 1);
+            SkiplistNode headNew = new SkiplistNode(Double.MIN_VALUE, head.level + 1);
+            SkiplistNode tailNew = new SkiplistNode(Double.MAX_VALUE, tail.level + 1);
             headNew.down = head;
             tailNew.down = tail;
 
@@ -52,7 +54,7 @@ public class SkipList {
         }
     }
 
-    public boolean search(int target) {
+    public boolean search(double target) {
         // 从顶层开始寻找，curNode表示当前遍历到的节点
         SkiplistNode curNode = headNodes.getFirst();
         while (curNode != null) {
@@ -74,7 +76,7 @@ public class SkipList {
         return false;
     }
 
-    public void add(int num) {
+    public void add(Double num) {
         // 获取本次添加的值的层数
         int level = getRandomLevel();
         // 如果本次添加的值的层数大于当前跳表的层数
@@ -153,8 +155,8 @@ public class SkipList {
         SkiplistNode head = headNodes.getFirst();
         SkiplistNode tail = tailNodes.getFirst();
         for (int i = 0; i < expanCount; i++) {
-            SkiplistNode headNew = new SkiplistNode(Integer.MIN_VALUE, head.level + 1);
-            SkiplistNode tailNew = new SkiplistNode(Integer.MAX_VALUE, tail.level + 1);
+            SkiplistNode headNew = new SkiplistNode(Double.MIN_VALUE, head.level + 1);
+            SkiplistNode tailNew = new SkiplistNode(Double.MAX_VALUE, tail.level + 1);
             headNew.down = head;
             tailNew.down = tail;
 
@@ -176,14 +178,14 @@ public class SkipList {
 
     public static void main(String[] args) {
         SkipList skipList = new SkipList();
-        int[] elementsToInsert = {3, 6, 7, 9, 12, 19, 17, 26, 21, 25};
-        for (int element : elementsToInsert) {
+        Double[] elementsToInsert = {3.0, 6.0, 7.0, 9.0, 12.0, 19.0, 17.0, 26.0, 21.0, 25.0};
+        for (double element : elementsToInsert) {
             skipList.add(element);
         }
 
 
         // 搜索示例
-        int searchValue = 19;
+        double searchValue = 19.0;
         if (skipList.search(searchValue)) {
             System.out.println(searchValue + " found in the skip list.");
         } else {
