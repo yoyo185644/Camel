@@ -4,7 +4,7 @@
 
 This project mainly includes the following various compression algorithms:
 
-- The main code for the ***Elf*** algorithm is in the *org/urbcomp/startdb/compress/camel* package.
+- The main code for the ***Camel*** algorithm is in the *org/urbcomp/startdb/compress/camel* package.
 
 - The main code for the ***Elf*** algorithm is in the *org/urbcomp/startdb/compress/elf* package.
 
