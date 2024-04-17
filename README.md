@@ -21,8 +21,7 @@ Camel includes *compressor* and *decompressor* packages as well as *xorcompresso
 
 #### compressor package
 
-This package includes 5 different XOR-based compression algorithms and provides a standard **ICompressor** interface. The
-erasing operation is abstracted as **AbstractElfCompressor**.
+This package includes 5 different XOR-based compression algorithms and provides a standard **ICompressor** interface. 
 
 - CamelCompressor: This class is the complete Camel compression algorithm.
 - ElfCompressor: This class is the complete elf compression algorithm.
