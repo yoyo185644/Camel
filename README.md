@@ -1,4 +1,4 @@
-# Camel: Efficient Compression on Floating-Point Time Series Data
+# Camel: Efficient Compression of Floating-Point Time Series
 
 ## Project Structure
 
