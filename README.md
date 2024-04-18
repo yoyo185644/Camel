@@ -46,6 +46,9 @@ This package is a decompression of the erased data designed based on the XOR-bas
 We recommend IntelliJ IDEA for developing this project. In our experiment, the default data block size is 1000. That is, 1000
 pieces of data are read in each time for compression testing. If the size of the data set is less than 1000, we will not read it. The final experimental result is an average calculation of the compression of all data blocks.
 
+- Camel compressor test: src/test/java/org/urbcomp/startdb/compress/elf/doubleprecision/TestCamel.java
+- Camel Index building test: src/test/java/org/urbcomp/startdb/compress/elf/doubleprecision/TestCamelTree.java
+
 ### Prerequisites for testing
 
 The following resources need to be downloaded and installed:
@@ -58,11 +61,6 @@ The following resources need to be downloaded and installed:
 Download and install jdk-8, IntelliJ IDEA and git. IntelliJ IDEA's maven project comes with maven, you can also use your
 own maven environment, just change it in the settings.
 
-### Clone code
-
-1. Open *IntelliJ IDEA*, find the *git* column, and select *Clone...*
-
-2. In the *Repository URL* interface, *Version control* selects *git*
 
 ### Set JDK
 
@@ -71,12 +69,4 @@ File -> Project Structure -> Project -> Project SDK -> *add SDK*
 Click *JDK* to select the address where you want to download jdk-8
 
 
-#### Double data test:
-
-In *doubleprecision* package
-
-- The **TestCompressor** class includes compression tests for 22 data sets. The test results are saved in *result/result.csv* in resource.
-- The **TestBeta** class is a compression test for different beta of data. Two data sets with long mantissa are selected
-  and different bits are reserved for compression test. The test results are saved in *result/resultBeta.csv* in
-  resource.
 
