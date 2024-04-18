@@ -64,8 +64,6 @@ own maven environment, just change it in the settings.
 
 2. In the *Repository URL* interface, *Version control* selects *git*
 
-3. URL filling: *https://github.com/Spatio-Temporal-Lab/elf.git*
-
 ### Set JDK
 
 File -> Project Structure -> Project -> Project SDK -> *add SDK*
