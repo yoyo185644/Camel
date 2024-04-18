@@ -4,7 +4,7 @@
 
 This project mainly includes the following various compression algorithms:
 
-- The main code for the ***Camel*** algorithm is in the *org/urbcomp/startdb/compress/camel* package.
+- The main code for the ***Camel*** algorithm is in the *yyy/ts/compress/camel* package.
 
 - The main code for the ***Elf*** algorithm is in the *org/urbcomp/startdb/compress/elf* package.
 
@@ -46,8 +46,8 @@ This package is a decompression of the erased data designed based on the XOR-bas
 We recommend IntelliJ IDEA for developing this project. In our experiment, the default data block size is 1000. That is, 1000
 pieces of data are read in each time for compression testing. If the size of the data set is less than 1000, we will not read it. The final experimental result is an average calculation of the compression of all data blocks.
 
-- Camel compressor test: src/test/java/org/urbcomp/startdb/compress/elf/doubleprecision/TestCamel.java
-- Camel Index building test: src/test/java/org/urbcomp/startdb/compress/elf/doubleprecision/TestCamelTree.java
+- Camel compressor test: org/urbcomp/startdb/compress/elf/doubleprecision/TestCamel.java
+- Camel Index building test: org/urbcomp/startdb/compress/elf/doubleprecision/TestCamelTree.java
 
 ### Prerequisites for testing
 
