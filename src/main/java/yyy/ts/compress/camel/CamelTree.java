@@ -115,10 +115,10 @@ public class CamelTree {
         if (TreeFlag) {
             TreeFlag = false;
             // ***** 范围 *****
-            bPlusTree = new BPlusTree(3);
+            bPlusTree = new BPlusTree(3, new SkipList());
             // ***** 值 *****
-            bPlusTree2 = new BPlusTree2(3);
-            bPlusDecimalTree = new BPlusDecimalTree(3);
+            bPlusTree2 = new BPlusTree2(3, new SkipList());
+            bPlusDecimalTree = new BPlusDecimalTree(3, new SkipList());
             bPlusDecimalTree = bPlusDecimalTree.buildTree(bPlusDecimalTree, compressVal.get("decimalCount"), compressVal.get("xorFlag"), compressVal.get("xorVal"));
 
 
@@ -126,7 +126,8 @@ public class CamelTree {
 //            System.out.println("compressInt" + Arrays.toString(compressVal.get("compressInt")) + ";" + "decimalCount" + Arrays.toString(compressVal.get("decimalCount")) +
 //                    "xorFlag" + Arrays.toString(compressVal.get("xorFlag")) + "xorVal" + Arrays.toString(compressVal.get("xorVal")) + "compressDecimal" + Arrays.toString(compressVal.get("compressDecimal")));
             // ***** 范围 ***** 对于范围查询就是每个整数后面加一颗树
-            bPlusTree.insert(new BPlusDecimalTree(3), compressVal.get("compressInt"), compressVal.get("compressInt"), compressVal.get("decimalCount"),
+
+            bPlusTree.insert(new BPlusDecimalTree(3, new SkipList()), compressVal.get("compressInt"), compressVal.get("compressInt"), compressVal.get("decimalCount"),
                     compressVal.get("xorFlag"), compressVal.get("xorVal"), compressVal.get("compressDecimal"), 1);
             // ***** 值 ***** 对于值查询就是建立两颗树
             bPlusTree2.insert(compressVal.get("compressInt"), compressVal.get("compressInt"), compressVal.get("decimalCount"),

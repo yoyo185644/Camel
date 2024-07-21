@@ -9,7 +9,7 @@ import java.util.Map;
  * 范围查询
  */
 public class RangeSearch {
-    public List<TSNode> searchRangeValue(BPlusTree bPlusTree, double begin, double end){
+    public List<SkiplistNode> searchRangeValue(BPlusTree bPlusTree, double begin, double end){
         BigDecimal begin_value = BigDecimal.valueOf(begin);
         BigDecimal begin_decimal_value = begin_value.subtract(BigDecimal.valueOf(begin_value.intValue()));
         int begin_decimal_count = CamelUtils.countDecimalPlaces(begin_decimal_value);
@@ -44,7 +44,7 @@ public class RangeSearch {
         BPlusDecimalTree end_PlusDecimalTree = end_intKeyNode.bPlusDecimalTree;
         KeyNode endNode = end_PlusDecimalTree.searchKeyNode(end_search_value);
 
-        List<TSNode> results = new ArrayList<>();
+        List<SkiplistNode> results = new ArrayList<>();
         KeyNode temp = beginNode;
         if (beginNode!=null && endNode!=null) {
             while (temp.key != endNode.key)

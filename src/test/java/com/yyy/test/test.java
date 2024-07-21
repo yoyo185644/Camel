@@ -40,10 +40,20 @@ public class test {
 //            }
 //        }
 
-        byte[] arr = intToBinary(16, 5);
-        System.out.println(Arrays.toString(arr));
+//        byte[] arr = intToBinary(16, 5);
+//        System.out.println(Arrays.toString(arr));
+//
+//        System.out.println(binaryToInt(arr));
 
-        System.out.println(binaryToInt(arr));
+
+
+        String osArch = System.getProperty("os.arch");
+        // 判断是32位还是64位
+        if (osArch.contains("64")) {
+            System.out.println("64位的JVM");
+        } else {
+            System.out.println("32位的JVM");
+        }
 
 
 //        while (Math.abs(value * factor - Math.round(value * factor)) > epsilon) {

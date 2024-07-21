@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * 值查询
  */
 public class ValueSearch {
-    public List<TSNode> searchValue(BPlusDecimalTree bPlusDecimalTree, BPlusTree2 bPlusTree2, double value){
+    public List<SkiplistNode> searchValue(BPlusDecimalTree bPlusDecimalTree, BPlusTree2 bPlusTree2, double value){
         BigDecimal big_value = BigDecimal.valueOf(value);
         BigDecimal decimal_value = big_value.subtract(BigDecimal.valueOf(big_value.intValue()));
         int decimal_count = CamelUtils.countDecimalPlaces(decimal_value);
@@ -22,7 +22,7 @@ public class ValueSearch {
 //        byte[] decimalBytes = CamelUtils.compressDecimal(decimal_count, decimal_value.intValue());
 
         // 小数部分的list
-        List<TSNode> decimalList = new ArrayList<>();
+        List<SkiplistNode> decimalList = new ArrayList<>();
         Map<String, Object> decimalRes = CamelUtils.countXORedVal(decimal_count, decimal_value);
         byte[] XORed = (byte[]) decimalRes.get("XORed");
         BigDecimal m = (BigDecimal) decimalRes.get("m");
@@ -45,7 +45,7 @@ public class ValueSearch {
         }
 
         // 整数部分的list
-        List<TSNode> integerList = new ArrayList<>();
+        List<SkiplistNode> integerList = new ArrayList<>();
         int firstVal = 64;
         int diffVal = big_value.intValue()-firstVal;
 
@@ -57,11 +57,11 @@ public class ValueSearch {
 
         // 找到两个List的交集
         // 使用Stream API找到交集
-        List<TSNode> result = new ArrayList<>();
+        List<SkiplistNode> result = new ArrayList<>();
         if (integerList !=null && decimalList != null) {
-            for (TSNode tsNode: integerList){
-                for (TSNode tsNode1: decimalList) {
-                    if (tsNode.valueDecimal == tsNode1.valueDecimal && tsNode.valueInt == tsNode.valueInt) {
+            for (SkiplistNode tsNode: integerList){
+                for (SkiplistNode tsNode1: decimalList) {
+                    if (tsNode.timeStamp == tsNode1.timeStamp) {
                         result.add(tsNode);
                     }
                 }

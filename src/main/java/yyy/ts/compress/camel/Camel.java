@@ -18,7 +18,7 @@ public class Camel {
     private int size;
     private final static long END_SIGN = Double.doubleToLongBits(Double.NaN);
 
-    private final static int DECIMAL_MAX_COUNT = 5;
+    private final static int DECIMAL_MAX_COUNT = 4;
 
     private  boolean decimalCountFlag = false;
 
@@ -174,8 +174,8 @@ public class Camel {
 
         // 保存m的值
         if (decimal_count == 1) { // 如果是1 直接往后读decimal_count+1位
-            out.writeInt(m, 2);
-            size += 2;
+            out.writeInt(m, 3);
+            size += 3;
             return this.size;
         }
         if (decimal_count ==2) {
