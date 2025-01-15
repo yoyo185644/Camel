@@ -6,17 +6,6 @@ This project mainly includes the following various compression algorithms:
 
 - The main code for the ***Camel*** algorithm is in the *yyy/ts/compress/camel* package.
 
-- The main code for the ***Elf*** algorithm is in the *org/urbcomp/startdb/compress/elf* package.
-
-- The main code for the ***Chimp*** algorithm is in the *gr/aueb/delorean/chimp* package.
-
-- The main code for the ***Gorilla*** algorithm is in the *fi/iki/yak/ts/compression/gorilla* package.
-
-- The main code for the ***FPC*** algorithm is in the *com/github/kutschkem/fpc* package.
-
-- The main code for other general compression algorithms is in the *org/apache/hadoop/hbase/io/compress* package.
-
-
 Camel includes *compressor* and *decompressor* packages as well as *xorcompressor* and *xordecompressor*.
 
 #### compressor package
@@ -24,22 +13,7 @@ Camel includes *compressor* and *decompressor* packages as well as *xorcompresso
 This package includes 5 different XOR-based compression algorithms and provides a standard **ICompressor** interface. 
 
 - CamelCompressor: This class is the complete Camel compression algorithm.
-- ElfCompressor: This class is the complete elf compression algorithm.
-- GorillaCompressorOS: This class is the Gorilla algorithm using Bitstream I/O optimization.
-- ChimpCompressor: This class is the original chimp algorithm.
-- ChimpNCompressor: This class is the original chimp128 algorithm.
 
-#### decompressor package
-
-This package includes the decompressors corresponding to the above 5 compressors and gives the standard **IDecompressor** interface
-
-#### xorcompressor package
-
-This package is a compressed encoding of post-erase data designed for XOR-based operations
-
-#### dexorcompressor package
-
-This package is a decompression of the erased data designed based on the XOR-based operation code.
 
 ## TEST Camel
 
